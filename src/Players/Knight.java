@@ -41,11 +41,11 @@ public class Knight extends Player {
             put("WALK_RIGHT", new Frame[] {
                 new FrameBuilder(spriteSheet.getSprite(0, 0), 14)
                     .withScale(1)
-                    .withBounds(14, 10, 23, 70)
+                    .withBounds(43, 10, 25, 70)
                     .build(),
                 new FrameBuilder(spriteSheet.getSprite(0, 1), 14)
                     .withScale(1)
-                    .withBounds(14, 10, 23, 70)
+                    .withBounds(43, 10, 25, 70)
                     .build()
             });
 
@@ -53,19 +53,19 @@ public class Knight extends Player {
                 new FrameBuilder(spriteSheet.getSprite(0, 0), 14)
                     .withScale(1)
                     .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(47, 10, 23, 70)
+                    .withBounds(44, 10, 25, 70)
                     .build(),
                 new FrameBuilder(spriteSheet.getSprite(0, 1), 14)
                     .withScale(1)
                     .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(47, 10, 23, 70)
+                    .withBounds(44, 10, 25, 70)
                     .build()
             });
 
             put("JUMP_RIGHT", new Frame[] {
                 new FrameBuilder(spriteSheet.getSprite(0, 1))
                     .withScale(1)
-                    .withBounds(14, 10, 23, 70)
+                    .withBounds(43, 10, 25, 70)
                     .build()
             });
 
@@ -73,14 +73,14 @@ public class Knight extends Player {
                 new FrameBuilder(spriteSheet.getSprite(0, 1))
                     .withScale(1)
                     .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(47, 10, 23, 70)
+                    .withBounds(44, 10, 25, 70)
                     .build()
             });
 
             put("FALL_RIGHT", new Frame[] {
                 new FrameBuilder(spriteSheet.getSprite(0, 1))
                     .withScale(1)
-                    .withBounds(14, 10, 23, 70)
+                    .withBounds(43, 10, 25, 70)
                     .build()
             });
 
@@ -88,14 +88,15 @@ public class Knight extends Player {
                 new FrameBuilder(spriteSheet.getSprite(0, 1))
                     .withScale(1)
                     .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(47, 10, 23, 70)
+                    .withBounds(44, 10, 25, 70)
                     .build()
             });
 
             put("CROUCH_RIGHT", new Frame[] {
                 new FrameBuilder(spriteSheet.getSprite(0, 0))
                     .withScale(1)
-                    .withBounds(14, 10, 23, 70)
+                    .withBounds(43, 10, 25, 70)
+                    
                     .build()
             });
 
@@ -103,7 +104,7 @@ public class Knight extends Player {
                 new FrameBuilder(spriteSheet.getSprite(0, 0))
                     .withScale(1)
                     .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(47, 10, 23, 70)
+                    .withBounds(44, 10, 25, 70)
                     .build()
             });
         }};
