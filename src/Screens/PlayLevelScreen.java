@@ -1,5 +1,6 @@
 package Screens;
 
+import java.awt.Color;
 import Engine.GraphicsHandler;
 import Engine.Screen;
 import Game.GameState;
@@ -8,7 +9,7 @@ import Level.Map;
 import Level.Player;
 import Level.PlayerListener;
 import Maps.TestMap;
-import Players.Cat;
+import Players.Knight;
 
 // This class is for when the platformer game is actually being played
 public class PlayLevelScreen extends Screen implements PlayerListener {
@@ -30,7 +31,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         this.map = new TestMap();
 
         // setup player
-        this.player = new Cat(map.getPlayerStartPosition().x, map.getPlayerStartPosition().y);
+        this.player = new Knight(map.getPlayerStartPosition().x, map.getPlayerStartPosition().y);
         this.player.setMap(map);
         this.player.addListener(this);
 
@@ -74,6 +75,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             case RUNNING:
                 map.draw(graphicsHandler);
                 player.draw(graphicsHandler);
+                drawDashBar(graphicsHandler);
                 break;
             case LEVEL_COMPLETED:
                 levelClearedScreen.draw(graphicsHandler);
@@ -86,6 +88,36 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
     public PlayLevelScreenState getPlayLevelScreenState() {
         return playLevelScreenState;
+    }
+
+    private void drawDashBar(GraphicsHandler graphicsHandler) 
+    {
+        int x = 20;
+        int y = 20;
+        int width = 100;
+        int height = 12;
+
+        // how full the bar is, 0.0 when just used, 1.0 when ready
+        float fill = 1f;
+        if (player.getDashCooldownTimer() > 0) 
+        {
+            fill = 1f - ((float) player.getDashCooldownTimer() / player.getDashCooldown());
+        }
+
+        int fillWidth = (int) (width * fill);
+
+        // background
+        graphicsHandler.drawFilledRectangle(x, y, width, height, new Color(40, 40, 40));
+
+        // fill — green when ready, orange while recharging
+        Color fillColor = fill >= 1f ? new Color(80, 220, 100) : new Color(230, 150, 50);
+        if (fillWidth > 0) 
+        {
+            graphicsHandler.drawFilledRectangle(x, y, fillWidth, height, fillColor);
+        }
+
+        // border
+        graphicsHandler.drawRectangle(x, y, width, height, Color.white, 2);
     }
 
     @Override

@@ -25,6 +25,9 @@ public abstract class Player extends GameObject {
     protected float momentumY = 0;
     protected float moveAmountX, moveAmountY;
     protected float lastAmountMovedX, lastAmountMovedY;
+    protected float dashSpeed = 50f;   // walkSpeed is usually ~2.3f, so this is a big jump
+    protected int dashDuration = 300;   // frames the dash lasts (~1/6 sec at 60fps)
+    protected int dashCooldown = 120;
 
     // values used to keep track of player's current state
     protected PlayerState playerState;
@@ -33,17 +36,27 @@ public abstract class Player extends GameObject {
     protected AirGroundState airGroundState;
     protected AirGroundState previousAirGroundState;
     protected LevelState levelState;
+    protected int dashTimer = 0;
+    protected int dashCooldownTimer = 0;
+    protected Direction dashDirection = Direction.RIGHT;
 
     // classes that listen to player events can be added to this list
     protected ArrayList<PlayerListener> listeners = new ArrayList<>();
 
     // define keys
     protected KeyLocker keyLocker = new KeyLocker();
-    protected Key JUMP_KEY = Key.UP;
-    protected Key MOVE_LEFT_KEY = Key.LEFT;
-    protected Key MOVE_RIGHT_KEY = Key.RIGHT;
-    protected Key CROUCH_KEY = Key.DOWN;
+    protected Key JUMP_KEY = Key.W;
+    protected Key MOVE_LEFT_KEY = Key.A;
+    protected Key MOVE_RIGHT_KEY = Key.D;
+    protected Key CROUCH_KEY = Key.S;
+    protected Key DASH_KEY = Key.SHIFT;
 
+
+    //Dash
+    public enum PlayerState 
+    {
+        STANDING, WALKING, JUMPING, CROUCHING, DASHING
+    }
     // flags
     protected boolean isInvincible = false; // if true, player cannot be hurt by enemies (good for testing)
 
@@ -64,7 +77,19 @@ public abstract class Player extends GameObject {
         // if player is currently playing through level (has not won or lost)
         if (levelState == LevelState.RUNNING) {
             applyGravity();
+            if (dashCooldownTimer > 0) 
+                {
+                dashCooldownTimer--;
+            
+                }
 
+            if (Keyboard.isKeyDown(DASH_KEY) && !keyLocker.isKeyLocked(DASH_KEY)
+            && playerState != PlayerState.DASHING && dashCooldownTimer == 0) {
+                keyLocker.lockKey(DASH_KEY);
+                dashDirection = facingDirection;
+                dashCooldownTimer = dashDuration;
+                playerState = PlayerState.DASHING;
+            }
             // update player's state and current actions, which includes things like determining how much it should move each frame and if its walking or jumping
             do {
                 previousPlayerState = playerState;
@@ -116,6 +141,9 @@ public abstract class Player extends GameObject {
             case JUMPING:
                 playerJumping();
                 break;
+            case DASHING:
+                playerDashing();
+                break;
         }
     }
 
@@ -164,6 +192,36 @@ public abstract class Player extends GameObject {
         else if (Keyboard.isKeyDown(CROUCH_KEY)) {
             playerState = PlayerState.CROUCHING;
         }
+    }
+
+    protected void playerDashing() 
+    {
+        currentAnimationName = dashDirection == Direction.RIGHT ? "WALK_RIGHT" : "WALK_LEFT";
+
+        // cancel gravity so the dash travels in a straight horizontal line
+        moveAmountY = 0;
+        momentumY = 0;
+        jumpForce = 0;
+
+        moveAmountX = dashDirection == Direction.RIGHT ? dashSpeed : -dashSpeed;
+
+        dashTimer--;
+        if (dashTimer <= 0) {
+        dashCooldownTimer = dashCooldown;
+        playerState = airGroundState == AirGroundState.GROUND
+            ? PlayerState.STANDING
+            : PlayerState.JUMPING;
+        }
+    }
+
+    public int getDashCooldownTimer() 
+    {
+        return dashCooldownTimer;
+    }
+
+    public int getDashCooldown() 
+    {
+        return dashCooldown;
     }
 
     // player CROUCHING state logic
@@ -240,6 +298,9 @@ public abstract class Player extends GameObject {
     protected void updateLockedKeys() {
         if (Keyboard.isKeyUp(JUMP_KEY)) {
             keyLocker.unlockKey(JUMP_KEY);
+        }
+        if (Keyboard.isKeyUp(DASH_KEY)) {
+            keyLocker.unlockKey(DASH_KEY);
         }
     }
 
