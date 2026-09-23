@@ -23,9 +23,12 @@ public class BugEnemy extends Enemy {
     private Direction startFacingDirection;
     private Direction facingDirection;
     private AirGroundState airGroundState;
+   
 
     public BugEnemy(Point location, Direction facingDirection) {
-        super(location.x, location.y, new SpriteSheet(ImageLoader.load("BugEnemy.png"), 24, 15), "WALK_LEFT");
+        super(location.x, location.y, 
+            new SpriteSheet(ImageLoader.load("Goblin.png"), 103, 80), "WALK_RIGHT");
+        
         this.startFacingDirection = facingDirection;
         this.initialize();
     }
@@ -97,28 +100,21 @@ public class BugEnemy extends Enemy {
     @Override
     public HashMap<String, Frame[]> loadAnimations(SpriteSheet spriteSheet) {
         return new HashMap<String, Frame[]>() {{
-            put("WALK_LEFT", new Frame[] {
-                    new FrameBuilder(spriteSheet.getSprite(0, 0), 8)
-                            .withScale(2)
-                            .withBounds(6, 6, 12, 7)
-                            .build(),
-                    new FrameBuilder(spriteSheet.getSprite(0, 1), 8)
-                            .withScale(2)
-                            .withBounds(6, 6, 12, 7)
-                            .build()
-            });
 
             put("WALK_RIGHT", new Frame[] {
-                    new FrameBuilder(spriteSheet.getSprite(0, 0), 8)
-                            .withScale(2)
-                            .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                            .withBounds(6, 6, 12, 7)
-                            .build(),
-                    new FrameBuilder(spriteSheet.getSprite(0, 1), 8)
-                            .withScale(2)
-                            .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                            .withBounds(6, 6, 12, 7)
-                            .build()
+                new FrameBuilder(spriteSheet.getSprite(0, 0), 20)
+                    .withScale(1).withBounds(35, 10, 38, 66).build(),
+                new FrameBuilder(spriteSheet.getSprite(0, 1), 20)
+                    .withScale(1).withBounds(35, 10, 38, 66).build()
+            });
+
+            put("WALK_LEFT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(0, 0), 20)
+                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(31, 10, 38, 66).build(),
+                new FrameBuilder(spriteSheet.getSprite(0, 1), 20)
+                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(31, 10, 38, 66).build()
             });
         }};
     }
