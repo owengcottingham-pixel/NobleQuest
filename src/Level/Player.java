@@ -13,6 +13,7 @@ import java.util.ArrayList;
 public abstract class Player extends GameObject {
     // values that affect player movement
     // these should be set in a subclass
+    protected int coins = 0;
     protected float walkSpeed = 0;
     protected float gravity = 0;
     protected float jumpHeight = 0;
@@ -49,7 +50,7 @@ public abstract class Player extends GameObject {
     protected Key MOVE_LEFT_KEY = Key.A;
     protected Key MOVE_RIGHT_KEY = Key.D;
     protected Key CROUCH_KEY = Key.S;
-    protected Key DASH_KEY = Key.SHIFT;
+    protected Key DASH_KEY = Key.SPACE;
 
 
     //Dash
@@ -428,34 +429,60 @@ public abstract class Player extends GameObject {
         }
     }
 
-    public PlayerState getPlayerState() {
+    public PlayerState getPlayerState() 
+    {
         return playerState;
     }
 
-    public void setPlayerState(PlayerState playerState) {
+    public void setPlayerState(PlayerState playerState) 
+    {
         this.playerState = playerState;
     }
 
-    public AirGroundState getAirGroundState() {
+    public AirGroundState getAirGroundState() 
+    {
         return airGroundState;
     }
 
-    public Direction getFacingDirection() {
+    public Direction getFacingDirection() 
+    {
         return facingDirection;
     }
 
-    public void setFacingDirection(Direction facingDirection) {
+    public void setFacingDirection(Direction facingDirection) 
+    {
         this.facingDirection = facingDirection;
     }
 
-    public void setLevelState(LevelState levelState) {
+    public void setLevelState(LevelState levelState) 
+    {
         this.levelState = levelState;
     }
 
-    public void addListener(PlayerListener listener) {
+    public void addListener(PlayerListener listener) 
+    {
         listeners.add(listener);
     }
 
+    public int getCoins() 
+    {
+        return coins;
+    }
+
+    public void addCoins(int amount) 
+    {
+        coins += amount;
+    }
+
+    public boolean spendCoins(int amount) 
+    {
+        if (coins >= amount) 
+        {
+            coins -= amount;
+            return true;
+        }
+        return false;
+    }
     // Uncomment this to have game draw player's bounds to make it easier to visualize
     /*
     public void draw(GraphicsHandler graphicsHandler) {

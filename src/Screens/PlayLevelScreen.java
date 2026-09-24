@@ -5,11 +5,16 @@ import Engine.GraphicsHandler;
 import Engine.Screen;
 import Game.GameState;
 import Game.ScreenCoordinator;
+import GameObject.SpriteSheet;
 import Level.Map;
 import Level.Player;
 import Level.PlayerListener;
 import Maps.TestMap;
 import Players.Knight;
+import Engine.ImageLoader;
+import Utils.NumberDisplay;
+
+import java.awt.image.BufferedImage;
 
 // This class is for when the platformer game is actually being played
 public class PlayLevelScreen extends Screen implements PlayerListener {
@@ -21,6 +26,9 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     protected LevelClearedScreen levelClearedScreen;
     protected LevelLoseScreen levelLoseScreen;
     protected boolean levelCompletedStateChangeStart;
+    protected NumberDisplay coinDisplay;
+    protected BufferedImage coinIcon;
+    private static final int SCREEN_WIDTH = 800;   // match your window
 
     public PlayLevelScreen(ScreenCoordinator screenCoordinator) {
         this.screenCoordinator = screenCoordinator;
@@ -34,6 +42,11 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         this.player = new Knight(map.getPlayerStartPosition().x, map.getPlayerStartPosition().y);
         this.player.setMap(map);
         this.player.addListener(this);
+
+        coinIcon = ImageLoader.load("Coin.png");
+        coinIcon = ImageLoader.load("Coin.png");
+        coinDisplay = new NumberDisplay(
+        new SpriteSheet(ImageLoader.load("Digits.png"), 8, 10), 3);
 
         levelClearedScreen = new LevelClearedScreen();
         levelLoseScreen = new LevelLoseScreen(this);
@@ -75,6 +88,9 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             case RUNNING:
                 map.draw(graphicsHandler);
                 player.draw(graphicsHandler);
+                graphicsHandler.drawImage(coinIcon, SCREEN_WIDTH - 112, 14, 28, 28);
+                graphicsHandler.drawImage(coinIcon, SCREEN_WIDTH - 112, 14, 28, 28);
+                coinDisplay.draw(graphicsHandler, player.getCoins(), SCREEN_WIDTH - 78, 12);
                 drawDashBar(graphicsHandler);
                 break;
             case LEVEL_COMPLETED:
