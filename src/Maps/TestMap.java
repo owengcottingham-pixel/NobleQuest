@@ -50,6 +50,18 @@ public class TestMap extends Map {
         );
         enhancedMapTiles.add(hmp);
 
+        HorizontalMovingPlatform longHmp = new HorizontalMovingPlatform(
+            ImageLoader.load("GreenPlatform.png"),
+            getMapTile(28, 6).getLocation(),
+            getMapTile(31, 6).getLocation(),
+            TileType.JUMP_THROUGH_PLATFORM,
+            3,
+            new Rectangle(0, 6, 16, 4),
+            Direction.LEFT,
+            2
+        );
+        enhancedMapTiles.add(longHmp);
+
         EndLevelBox endLevelBox = new EndLevelBox(getMapTile(32, 7).getLocation());
         enhancedMapTiles.add(endLevelBox);
 

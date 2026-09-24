@@ -10,6 +10,7 @@ import Utils.AirGroundState;
 import Utils.Direction;
 import Utils.Point;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 // This class is for a horizontal moving platform
@@ -28,6 +29,25 @@ public class HorizontalMovingPlatform extends EnhancedMapTile {
         this.endLocation = endLocation;
         this.startDirection = startDirection;
         this.initialize();
+    }
+
+    public HorizontalMovingPlatform(BufferedImage image, Point startLocation, Point endLocation, TileType tileType, float scale, Rectangle bounds, Direction startDirection, int lengthMultiplier) {
+        this(createRepeatedImage(image, lengthMultiplier), startLocation, endLocation, tileType, scale,
+                new Rectangle(bounds.getX1(), bounds.getY1(), bounds.getWidth() * lengthMultiplier, bounds.getHeight()), startDirection);
+    }
+
+    private static BufferedImage createRepeatedImage(BufferedImage image, int lengthMultiplier) {
+        if (lengthMultiplier < 1) {
+            throw new IllegalArgumentException("lengthMultiplier must be at least 1");
+        }
+
+        BufferedImage repeatedImage = new BufferedImage(image.getWidth() * lengthMultiplier, image.getHeight(), image.getType());
+        Graphics2D graphics = repeatedImage.createGraphics();
+        for (int index = 0; index < lengthMultiplier; index++) {
+            graphics.drawImage(image, index * image.getWidth(), 0, null);
+        }
+        graphics.dispose();
+        return repeatedImage;
     }
 
     @Override
