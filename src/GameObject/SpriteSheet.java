@@ -21,7 +21,7 @@ public class SpriteSheet {
 
 	// returns a subimage from the sprite sheet image based on the row and column
 	public BufferedImage getSprite(int spriteNumber, int animationNumber) {
-		return image.getSubimage((animationNumber * spriteWidth) + animationNumber, (spriteNumber * spriteHeight) + spriteNumber, spriteWidth, spriteHeight);
+		return image.getSubimage((animationNumber * spriteWidth), (spriteNumber * spriteHeight) , spriteWidth, spriteHeight);
 	}
 
 	// returns a subimage from the sprite sheet image based on the row and column
