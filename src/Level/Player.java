@@ -38,6 +38,7 @@ public abstract class Player extends GameObject {
     protected LevelState levelState;
     protected int dashTimer = 0;
     protected int dashCooldownTimer = 0;
+    protected int attackTimer = 0;
     protected Direction dashDirection = Direction.RIGHT;
 
     // classes that listen to player events can be added to this list
@@ -50,12 +51,13 @@ public abstract class Player extends GameObject {
     protected Key MOVE_RIGHT_KEY = Key.D;
     protected Key CROUCH_KEY = Key.S;
     protected Key DASH_KEY = Key.SHIFT;
+    protected Key ATTACK_KEY = Key.J;
 
 
     //Dash
     public enum PlayerState 
     {
-        STANDING, WALKING, JUMPING, CROUCHING, DASHING
+        STANDING, WALKING, JUMPING, CROUCHING, DASHING, ATTACKING
     }
     // flags
     protected boolean isInvincible = false; // if true, player cannot be hurt by enemies (good for testing)
@@ -144,13 +146,20 @@ public abstract class Player extends GameObject {
             case DASHING:
                 playerDashing();
                 break;
+            case ATTACKING:
+                playerAttacking();
+                break;
         }
     }
 
     // player STANDING state logic
     protected void playerStanding() {
+        if (canAttack() && Keyboard.isKeyDown(ATTACK_KEY) && !keyLocker.isKeyLocked(ATTACK_KEY)) {
+            startAttack();
+        }
+
         // if walk left or walk right key is pressed, player enters WALKING state
-        if (Keyboard.isKeyDown(MOVE_LEFT_KEY) || Keyboard.isKeyDown(MOVE_RIGHT_KEY)) {
+        else if (Keyboard.isKeyDown(MOVE_LEFT_KEY) || Keyboard.isKeyDown(MOVE_RIGHT_KEY)) {
             playerState = PlayerState.WALKING;
         }
 
@@ -168,6 +177,11 @@ public abstract class Player extends GameObject {
 
     // player WALKING state logic
     protected void playerWalking() {
+        if (canAttack() && Keyboard.isKeyDown(ATTACK_KEY) && !keyLocker.isKeyLocked(ATTACK_KEY)) {
+            startAttack();
+            return;
+        }
+
         // if walk left key is pressed, move player to the left
         if (Keyboard.isKeyDown(MOVE_LEFT_KEY)) {
             moveAmountX -= walkSpeed;
@@ -212,6 +226,27 @@ public abstract class Player extends GameObject {
             ? PlayerState.STANDING
             : PlayerState.JUMPING;
         }
+    }
+
+    protected void startAttack() {
+        keyLocker.lockKey(ATTACK_KEY);
+        attackTimer = 12;
+        playerState = PlayerState.ATTACKING;
+    }
+
+    protected void playerAttacking() {
+        moveAmountX = 0;
+        attackTimer--;
+
+        if (attackTimer <= 0) {
+            playerState = Keyboard.isKeyDown(MOVE_LEFT_KEY) || Keyboard.isKeyDown(MOVE_RIGHT_KEY)
+                    ? PlayerState.WALKING
+                    : PlayerState.STANDING;
+        }
+    }
+
+    protected boolean canAttack() {
+        return animations.containsKey("ATTACK_RIGHT") && animations.containsKey("ATTACK_LEFT");
     }
 
     public int getDashCooldownTimer() 
@@ -302,6 +337,9 @@ public abstract class Player extends GameObject {
         if (Keyboard.isKeyUp(DASH_KEY)) {
             keyLocker.unlockKey(DASH_KEY);
         }
+        if (Keyboard.isKeyUp(ATTACK_KEY)) {
+            keyLocker.unlockKey(ATTACK_KEY);
+        }
     }
 
     // anything extra the player should do based on interactions can be handled here
@@ -334,6 +372,9 @@ public abstract class Player extends GameObject {
             } else {
                 this.currentAnimationName = facingDirection == Direction.RIGHT ? "FALL_RIGHT" : "FALL_LEFT";
             }
+        }
+        else if (playerState == PlayerState.ATTACKING) {
+            this.currentAnimationName = facingDirection == Direction.RIGHT ? "ATTACK_RIGHT" : "ATTACK_LEFT";
         }
     }
 

@@ -92,6 +92,30 @@ public class Knight extends Player {
                     .build()
             });
 
+            put("ATTACK_RIGHT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(1, 0), 6)
+                    .withScale(1)
+                    .withBounds(43, 10, 25, 70)
+                    .build(),
+                new FrameBuilder(spriteSheet.getSprite(1, 1), 6)
+                    .withScale(1)
+                    .withBounds(43, 10, 25, 70)
+                    .build()
+            });
+
+            put("ATTACK_LEFT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(1, 0), 6)
+                    .withScale(1)
+                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(44, 10, 25, 70)
+                    .build(),
+                new FrameBuilder(spriteSheet.getSprite(1, 1), 6)
+                    .withScale(1)
+                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(44, 10, 25, 70)
+                    .build()
+            });
+
             put("CROUCH_RIGHT", new Frame[] {
                 new FrameBuilder(spriteSheet.getSprite(0, 0))
                     .withScale(1)
