@@ -23,6 +23,7 @@ public class TestMap extends Map {
 
     @Override
     public ArrayList<Enemy> loadEnemies() {
+        
         ArrayList<Enemy> enemies = new ArrayList<>();
 
         BugEnemy bugEnemy = new BugEnemy(getMapTile(16, 10).getLocation().subtractY(80), Direction.LEFT);

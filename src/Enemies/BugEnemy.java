@@ -20,6 +20,12 @@ import java.util.HashMap;
 public class BugEnemy extends Enemy {
     private float gravity = .5f;
     private float movementSpeed = .5f;
+    protected int hurtTimer = 0;
+    protected int hurtDuration = 45;        // frames of red, ~0.75s at 60fps
+    protected int knockbackTimer = 0;
+    protected int knockbackDuration = 14;
+    protected float knockbackSpeed = 4f;
+    protected Direction knockbackDirection = Direction.LEFT;
     private Direction startFacingDirection;
     private Direction facingDirection;
     private AirGroundState airGroundState;
@@ -27,10 +33,20 @@ public class BugEnemy extends Enemy {
 
     public BugEnemy(Point location, Direction facingDirection) {
         super(location.x, location.y, 
-            new SpriteSheet(ImageLoader.load("Goblin.png"), 103, 80), "WALK_RIGHT");
-        
+            new SpriteSheet(ImageLoader.load("Goblin.png"), 104, 80), "WALK_RIGHT");
+            
         this.startFacingDirection = facingDirection;
         this.initialize();
+    }
+
+    @Override
+    public void touchedPlayer(Player player) {
+        if (hurtTimer > 0) {
+            return;                 // already reeling, ignore repeat contact
+        }
+        hurtTimer = hurtDuration;
+        knockbackTimer = knockbackDuration;
+        knockbackDirection = (getX() < player.getX()) ? Direction.LEFT : Direction.RIGHT;
     }
 
     @Override
@@ -45,26 +61,33 @@ public class BugEnemy extends Enemy {
         airGroundState = AirGroundState.GROUND;
     }
 
+    
     @Override
     public void update(Player player) {
         float moveAmountX = 0;
         float moveAmountY = 0;
 
-        // add gravity (if in air, this will cause bug to fall)
         moveAmountY += gravity;
 
-        // if on ground, walk forward based on facing direction
-        if (airGroundState == AirGroundState.GROUND) {
-            if (facingDirection == Direction.RIGHT) {
-                moveAmountX += movementSpeed;
-            } else {
-                moveAmountX -= movementSpeed;
-            }
+        if (hurtTimer > 0) {
+            hurtTimer--;
         }
 
-        // move bug
+        if (knockbackTimer > 0) {
+            knockbackTimer--;
+            moveAmountX += knockbackDirection == Direction.RIGHT ? knockbackSpeed : -knockbackSpeed;
+        } else if (airGroundState == AirGroundState.GROUND) {
+            moveAmountX += facingDirection == Direction.RIGHT ? movementSpeed : -movementSpeed;
+        }
+
         moveYHandleCollision(moveAmountY);
         moveXHandleCollision(moveAmountX);
+
+        if (hurtTimer > 0) {
+            currentAnimationName = facingDirection == Direction.RIGHT ? "HURT_RIGHT" : "HURT_LEFT";
+        } else {
+            currentAnimationName = facingDirection == Direction.RIGHT ? "WALK_RIGHT" : "WALK_LEFT";
+        }
 
         super.update(player);
     }
@@ -73,6 +96,10 @@ public class BugEnemy extends Enemy {
     public void onEndCollisionCheckX(boolean hasCollided, Direction direction,  MapEntity entityCollidedWith) {
         // if bug has collided into something while walking forward,
         // it turns around (changes facing direction)
+        if (knockbackTimer > 0) {
+            return;
+        }
+
         if (hasCollided) {
             if (direction == Direction.RIGHT) {
                 facingDirection = Direction.LEFT;
@@ -113,6 +140,23 @@ public class BugEnemy extends Enemy {
                     .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
                     .withBounds(31, 10, 38, 66).build(),
                 new FrameBuilder(spriteSheet.getSprite(0, 1), 20)
+                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(31, 10, 38, 66).build()
+            });
+
+            put("HURT_RIGHT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(1, 0), 20)
+                    .withScale(1).withBounds(35, 10, 38, 66).build(),
+                new FrameBuilder(spriteSheet.getSprite(1, 1), 20)
+                    .withScale(1).withBounds(35, 10, 38, 66).build()
+        
+            });
+
+            put("HURT_LEFT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(1, 0), 20)
+                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(31, 10, 38, 66).build(),
+                new FrameBuilder(spriteSheet.getSprite(1, 1), 20)
                     .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
                     .withBounds(31, 10, 38, 66).build()
             });
