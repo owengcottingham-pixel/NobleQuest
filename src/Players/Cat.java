@@ -54,19 +54,19 @@ public class Cat extends Player {
             put("WALK_RIGHT", new Frame[] {
                     new FrameBuilder(spriteSheet.getSprite(1, 0), 14)
                             .withScale(3)
-                            .withBounds(8, 9, 8, 9)
+                            .withBounds(20, 9, 20, 9)
                             .build(),
                     new FrameBuilder(spriteSheet.getSprite(1, 1), 14)
                             .withScale(3)
-                            .withBounds(8, 9, 8, 9)
+                            .withBounds(20, 9, 20, 9)
                             .build(),
                     new FrameBuilder(spriteSheet.getSprite(1, 2), 14)
                             .withScale(3)
-                            .withBounds(8, 9, 8, 9)
+                            .withBounds(20, 9, 20, 9)
                             .build(),
                     new FrameBuilder(spriteSheet.getSprite(1, 3), 14)
                             .withScale(3)
-                            .withBounds(8, 9, 8, 9)
+                            .withBounds(20, 9, 20, 9)
                             .build()
             });
 
@@ -74,22 +74,22 @@ public class Cat extends Player {
                     new FrameBuilder(spriteSheet.getSprite(1, 0), 14)
                             .withScale(3)
                             .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                            .withBounds(8, 9, 8, 9)
+                            .withBounds(20, 9, 20, 9)
                             .build(),
                     new FrameBuilder(spriteSheet.getSprite(1, 1), 14)
                             .withScale(3)
                             .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                            .withBounds(8, 9, 8, 9)
+                            .withBounds(20, 9, 20, 9)
                             .build(),
                     new FrameBuilder(spriteSheet.getSprite(1, 2), 14)
                             .withScale(3)
                             .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                            .withBounds(8, 9, 8, 9)
+                            .withBounds(20, 9, 20, 9)
                             .build(),
                     new FrameBuilder(spriteSheet.getSprite(1, 3), 14)
                             .withScale(3)
                             .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                            .withBounds(8, 9, 8, 9)
+                            .withBounds(20, 9, 20, 9)
                             .build()
             });
 

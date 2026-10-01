@@ -29,6 +29,7 @@ public class Point {
     public Point subtractX(int x) {
         return new Point(this.x - x, this.y);
     }
+    
 
     public Point subtractY(int y) {
         return new Point(this.x, this.y - y);

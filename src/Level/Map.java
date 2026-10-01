@@ -211,7 +211,7 @@ public abstract class Map {
     // get specific map tile from tile map
     public MapTile getMapTile(int x, int y) {
         if (isInBounds(x, y)) {
-            return mapTiles[getConvertedIndex(x, y)];
+            return mapTiles[(int) getConvertedIndex(x, y)];
         } else {
             return null;
         }
@@ -222,7 +222,7 @@ public abstract class Map {
         if (isInBounds(x, y)) {
             MapTile oldMapTile = getMapTile(x, y);
             animatedMapTiles.remove(oldMapTile);
-            mapTiles[getConvertedIndex(x, y)] = tile;
+            mapTiles[(int) getConvertedIndex(x, y)] = tile;
             if (tile.isAnimated()) {
                 animatedMapTiles.add(tile);
             }
