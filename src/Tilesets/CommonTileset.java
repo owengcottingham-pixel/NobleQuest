@@ -50,6 +50,8 @@ public class CommonTileset extends Tileset {
                 .withTileType(TileType.NOT_PASSABLE);
 
         mapTiles.add(dirtTile);
+       
+        
 
         // sun
         Frame[] sunFrames = new Frame[]{
@@ -263,6 +265,17 @@ public class CommonTileset extends Tileset {
 
         mapTiles.add(leftStairsTopTile);
 
+        //stone
+        Frame stoneFrame = new FrameBuilder(getSubImage(3, 2))
+                .withScale(tileScale)
+                .build();
+
+        MapTileBuilder Stonetile1 = new MapTileBuilder(stoneFrame)
+                .withTileType(TileType.NOT_PASSABLE);
+
+        mapTiles.add(Stonetile1);
+
         return mapTiles;
     }
+
 }
