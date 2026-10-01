@@ -507,15 +507,15 @@ public abstract class Player extends GameObject {
 
             } else {
             if (playerState != PlayerState.DASHING) {
-
+                playerState = PlayerState.JUMPING;
             }
 
            
 
                
         airGroundState = AirGroundState.AIR;
+        }
     }
-}
 
         else if (direction == Direction.UP) {
 
