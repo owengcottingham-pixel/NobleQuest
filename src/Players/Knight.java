@@ -5,10 +5,15 @@ import Engine.ImageLoader;
 import GameObject.Frame;
 import GameObject.ImageEffect;
 import GameObject.SpriteSheet;
+import Level.LevelState;
 import Level.Player;
+import Utils.Direction;
+
 import java.util.HashMap;
 
 public class Knight extends Player {
+    
+
 
     public Knight(float x, float y) {
         super(new SpriteSheet(ImageLoader.load("Knight.png"), 112, 84), x, y, "STAND_RIGHT");        gravity = .5f;
@@ -18,6 +23,8 @@ public class Knight extends Player {
         walkSpeed = 2.3f;
         momentumYIncrease = .5f;
     }
+    
+    
 
     @Override
     public HashMap<String, Frame[]> loadAnimations(SpriteSheet spriteSheet) {
@@ -130,6 +137,38 @@ public class Knight extends Player {
                     .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
                     .withBounds(44, 10, 25, 70)
                     .build()
+            });
+            put("DASH_RIGHT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(3, 1))
+                    .withScale(1).withBounds(43, 10, 25, 70).build()
+    
+            });
+
+            put("DASH_LEFT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(3, 1))
+                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(44, 10, 25, 70).build()
+            });
+
+            put("DEATH_RIGHT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(0, 0), 12)
+                    .withScale(1).withBounds(43, 10, 25, 70).build(),
+                new FrameBuilder(spriteSheet.getSprite(3, 0), 48)
+                    .withScale(1).withBounds(21, 60, 70, 20).build(),
+                new FrameBuilder(spriteSheet.getSprite(3, 0))
+                    .withScale(1).withBounds(21, 60, 70, 20).build()
+            });
+
+            put("DEATH_LEFT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(0, 0), 12)
+                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(44, 10, 25, 70).build(),
+                new FrameBuilder(spriteSheet.getSprite(3, 0), 48)
+                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(21, 60, 70, 20).build(),
+                new FrameBuilder(spriteSheet.getSprite(3, 0))
+                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
+                    .withBounds(21, 60, 70, 20).build()
             });
         }};
     }

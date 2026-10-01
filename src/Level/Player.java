@@ -1,5 +1,6 @@
 package Level;
 
+import Engine.GraphicsHandler;
 import Engine.Key;
 import Engine.KeyLocker;
 import Engine.Keyboard;
@@ -11,7 +12,14 @@ import Utils.Direction;
 import java.util.ArrayList;
 
 public abstract class Player extends GameObject {
+    
+    protected int maxHealth = 5;
+    protected int health = maxHealth;
+    protected int invincibilityTimer = 0;
+    protected int invincibilityDuration = 90;   // 1.5s at 60fps
+    
     // values that affect player movement
+
     // these should be set in a subclass
     protected int coins = 0;
     protected float walkSpeed = 0;
@@ -26,9 +34,12 @@ public abstract class Player extends GameObject {
     protected float momentumY = 0;
     protected float moveAmountX, moveAmountY;
     protected float lastAmountMovedX, lastAmountMovedY;
-    protected float dashSpeed = 50f;   // walkSpeed is usually ~2.3f, so this is a big jump
-    protected int dashDuration = 300;   // frames the dash lasts (~1/6 sec at 60fps)
+    protected float dashSpeed = 7f;   // walkSpeed is usually ~2.3f, so this is a big jump
+    protected int dashDuration = 17;   // frames the dash lasts (~1/6 sec at 60fps)
     protected int dashCooldown = 120;
+    protected java.util.ArrayList<Float> dashTrailX = new java.util.ArrayList<>();
+    protected java.util.ArrayList<Float> dashTrailY = new java.util.ArrayList<>();
+    protected int dashTrailLength = 5;
 
     // values used to keep track of player's current state
     protected PlayerState playerState;
@@ -77,7 +88,41 @@ public abstract class Player extends GameObject {
         levelState = LevelState.RUNNING;
     }
 
+    public int getHealth() {
+        return health;
+    }
+
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
+    public boolean isHurtInvincible() {
+        return invincibilityTimer > 0;
+    }
+
+    public void damage(int amount) {
+        if (invincibilityTimer > 0) {
+            return;
+        }
+        health -= amount;
+        invincibilityTimer = invincibilityDuration;
+
+        if (health <= 0) {
+            health = 0;
+            levelState = LevelState.PLAYER_DEAD;
+        }
+    }
+
+    public boolean isAttacking() {
+        return currentAnimationName.startsWith("ATTACK");
+    }
+
+    
+
     public void update() {
+        if (invincibilityTimer > 0) {
+            invincibilityTimer--;
+        }
         moveAmountX = 0;
         moveAmountY = 0;
 
@@ -94,7 +139,7 @@ public abstract class Player extends GameObject {
             && playerState != PlayerState.DASHING && dashCooldownTimer == 0) {
                 keyLocker.lockKey(DASH_KEY);
                 dashDirection = facingDirection;
-                dashCooldownTimer = dashDuration;
+                dashTimer = dashDuration;
                 playerState = PlayerState.DASHING;
             }
             // update player's state and current actions, which includes things like determining how much it should move each frame and if its walking or jumping
@@ -128,6 +173,8 @@ public abstract class Player extends GameObject {
         }
     }
 
+    
+
     // add gravity to player, which is a downward force
     protected void applyGravity() {
         moveAmountY += gravity + momentumY;
@@ -154,6 +201,7 @@ public abstract class Player extends GameObject {
             case ATTACKING:
                 playerAttacking();
                 break;
+            
         }
     }
 
@@ -215,21 +263,30 @@ public abstract class Player extends GameObject {
 
     protected void playerDashing() 
     {
-        currentAnimationName = dashDirection == Direction.RIGHT ? "WALK_RIGHT" : "WALK_LEFT";
+        currentAnimationName = dashDirection == Direction.RIGHT ? "DASH_RIGHT" : "DASH_LEFT";
 
         // cancel gravity so the dash travels in a straight horizontal line
-        moveAmountY = 0;
+        
         momentumY = 0;
         jumpForce = 0;
 
         moveAmountX = dashDirection == Direction.RIGHT ? dashSpeed : -dashSpeed;
 
+        dashTrailX.add(getX());
+        dashTrailY.add(getY());
+        if (dashTrailX.size() > dashTrailLength) {
+            dashTrailX.remove(0);
+            dashTrailY.remove(0);
+        }
+
         dashTimer--;
         if (dashTimer <= 0) {
-        dashCooldownTimer = dashCooldown;
-        playerState = airGroundState == AirGroundState.GROUND
-            ? PlayerState.STANDING
-            : PlayerState.JUMPING;
+            dashTrailX.clear();
+            dashTrailY.clear();
+            dashCooldownTimer = dashCooldown;
+            playerState = airGroundState == AirGroundState.GROUND
+                ? PlayerState.STANDING
+                : PlayerState.JUMPING;
         }
     }
 
@@ -381,6 +438,12 @@ public abstract class Player extends GameObject {
         else if (playerState == PlayerState.ATTACKING) {
             this.currentAnimationName = facingDirection == Direction.RIGHT ? "ATTACK_RIGHT" : "ATTACK_LEFT";
         }
+        else if (playerState == PlayerState.ATTACKING) {
+            this.currentAnimationName = facingDirection == Direction.RIGHT ? "ATTACK_RIGHT" : "ATTACK_LEFT";
+        }
+        else if (playerState == PlayerState.DASHING) {
+            this.currentAnimationName = dashDirection == Direction.RIGHT ? "DASH_RIGHT" : "DASH_LEFT";
+        }
     }
 
     @Override
@@ -395,10 +458,12 @@ public abstract class Player extends GameObject {
                 momentumY = 0;
                 airGroundState = AirGroundState.GROUND;
             } else {
+            if (playerState != PlayerState.DASHING) {
                 playerState = PlayerState.JUMPING;
-                airGroundState = AirGroundState.AIR;
             }
-        }
+        airGroundState = AirGroundState.AIR;
+    }
+}
 
         // if player collides with map tile upwards, it means it was jumping and then hit into a ceiling -- immediately stop upwards jump velocity
         else if (direction == Direction.UP) {
@@ -527,6 +592,27 @@ public abstract class Player extends GameObject {
             return true;
         }
         return false;
+    }
+
+        @Override
+    public void draw(GraphicsHandler graphicsHandler) {
+        if (invincibilityTimer > 0 && (invincibilityTimer / 4) % 2 == 0) {
+            return;
+        }
+
+        if (playerState == PlayerState.DASHING) {
+            float realX = getX();
+            float realY = getY();
+            for (int i = 0; i < dashTrailX.size(); i++) {
+                setX(dashTrailX.get(i));
+                setY(dashTrailY.get(i));
+                super.draw(graphicsHandler);
+            }
+            setX(realX);
+            setY(realY);
+        }
+
+        super.draw(graphicsHandler);
     }
     // Uncomment this to have game draw player's bounds to make it easier to visualize
     /*

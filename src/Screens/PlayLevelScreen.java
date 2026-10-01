@@ -92,6 +92,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                 graphicsHandler.drawImage(coinIcon, SCREEN_WIDTH - 112, 14, 28, 28);
                 coinDisplay.draw(graphicsHandler, player.getCoins(), SCREEN_WIDTH - 78, 12);
                 drawDashBar(graphicsHandler);
+                drawHealthBar(graphicsHandler);
                 break;
             case LEVEL_COMPLETED:
                 levelClearedScreen.draw(graphicsHandler);
@@ -133,6 +134,24 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         }
 
         // border
+        graphicsHandler.drawRectangle(x, y, width, height, Color.white, 2);
+    }
+
+    private void drawHealthBar(GraphicsHandler graphicsHandler) {
+        int x = 20, y = 45, width = 120, height = 14;
+
+        float fill = (float) player.getHealth() / player.getMaxHealth();
+        int fillWidth = (int) (width * fill);
+
+        graphicsHandler.drawFilledRectangle(x, y, width, height, new Color(40, 40, 40));
+
+        Color c = fill > 0.5f ? new Color(80, 200, 90)
+                : fill > 0.25f ? new Color(230, 170, 40)
+                : new Color(210, 50, 45);
+
+        if (fillWidth > 0) {
+            graphicsHandler.drawFilledRectangle(x, y, fillWidth, height, c);
+        }
         graphicsHandler.drawRectangle(x, y, width, height, Color.white, 2);
     }
 
