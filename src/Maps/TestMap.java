@@ -10,6 +10,7 @@ import Level.*;
 import NPCs.Walrus;
 import Tilesets.CommonTileset;
 import Utils.Direction;
+import EnhancedMapTiles.FallingObject;
 
 import java.util.ArrayList;
 
@@ -37,37 +38,30 @@ public class TestMap extends Map {
     }
 
     @Override
-    public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
-        ArrayList<EnhancedMapTile> enhancedMapTiles = new ArrayList<>();
+public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
+    ArrayList<EnhancedMapTile> enhancedMapTiles = new ArrayList<>();
 
-        HorizontalMovingPlatform hmp = new HorizontalMovingPlatform(
-                ImageLoader.load("GreenPlatform.png"),
-                getMapTile(24, 6).getLocation(),
-                getMapTile(27, 6).getLocation(),
-                TileType.JUMP_THROUGH_PLATFORM,
-                3,
-                new Rectangle(0, 6,16,4),
-                Direction.RIGHT
-        );
-        enhancedMapTiles.add(hmp);
+    HorizontalMovingPlatform hmp = new HorizontalMovingPlatform(
+        ImageLoader.load("GreenPlatform.png"),
+        getMapTile(24, 6).getLocation(),
+        getMapTile(27, 6).getLocation(),
+        TileType.JUMP_THROUGH_PLATFORM,
+        3,
+        new Rectangle(0, 6,16,4),
+        Direction.RIGHT
+    );
 
-        HorizontalMovingPlatform longHmp = new HorizontalMovingPlatform(
-            ImageLoader.load("GreenPlatform.png"),
-            getMapTile(28, 6).getLocation(),
-            getMapTile(31, 6).getLocation(),
-            TileType.JUMP_THROUGH_PLATFORM,
-            3,
-            new Rectangle(0, 6, 16, 4),
-            Direction.LEFT,
-            2
-        );
-        enhancedMapTiles.add(longHmp);
+    enhancedMapTiles.add(hmp);
 
-        EndLevelBox endLevelBox = new EndLevelBox(getMapTile(32, 7).getLocation());
-        enhancedMapTiles.add(endLevelBox);
+    FallingObject fallingObject = new FallingObject(
+        getMapTile(6, 5).getX(),
+        getMapTile(6, 5).getY()
+    );
 
-        return enhancedMapTiles;
-    }
+    enhancedMapTiles.add(fallingObject);
+
+    return enhancedMapTiles;
+}
 
     @Override
     public ArrayList<NPC> loadNPCs() {
