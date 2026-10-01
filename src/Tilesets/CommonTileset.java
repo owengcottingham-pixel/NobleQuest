@@ -69,6 +69,7 @@ public class CommonTileset extends Tileset {
         Frame treeTrunkWithFullHoleFrame = new FrameBuilder(getSubImage(2, 2))
                 .withScale(tileScale)
                 .build();
+                
 
         MapTileBuilder treeTrunkWithFullHoleTile = new MapTileBuilder(treeTrunkWithFullHoleFrame)
                 .withTileType(TileType.NOT_PASSABLE);
