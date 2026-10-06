@@ -363,7 +363,7 @@ public class CommonTileset extends Tileset {
 
 
         // invisible tile
-        Frame invisibleFrame = new FrameBuilder(getSubImage(4, 2))
+        Frame invisibleFrame = new FrameBuilder(getSubImage(6, 1))
                 .withScale(tileScale)
                 .build();
 
