@@ -21,8 +21,11 @@ import java.util.HashMap;
 // enemy behaves like a Mario goomba -- walks forward until it hits a solid map tile, and then turns around
 // if it ends up in the air from walking off a cliff, it will fall down until it hits the ground again, and then will continue walking
 public class BugEnemy extends Enemy {
-    private float gravity = .5f;
-    private float movementSpeed = .5f;
+    protected float gravity = .5f;
+    protected float momentumY = 0;
+    protected float momentumYIncrease = .5f;
+    protected float terminalVelocityY = 6f;
+    protected float movementSpeed = .5f;
 
     protected int maxHealth = 3;
     protected int health = maxHealth;
@@ -35,7 +38,7 @@ public class BugEnemy extends Enemy {
     protected int knockbackDuration = 14;
     protected float knockbackSpeed = 4f;
     protected Direction knockbackDirection = Direction.LEFT;
-    private Direction startFacingDirection;
+    protected Direction startFacingDirection;
     private Direction facingDirection;
     private AirGroundState airGroundState;
     protected int attackRange = 80;          // horizontal px before he commits
@@ -48,9 +51,11 @@ public class BugEnemy extends Enemy {
    
 
     public BugEnemy(Point location, Direction facingDirection) {
-        super(location.x, location.y, 
-            new SpriteSheet(ImageLoader.load("Goblin.png"), 104, 80), "WALK_RIGHT");
-            
+        this(location, facingDirection, new SpriteSheet(ImageLoader.load("Goblin.png"), 104, 80));
+    }
+
+    protected BugEnemy(Point location, Direction facingDirection, SpriteSheet spriteSheet) {
+        super(location.x, location.y, spriteSheet, "WALK_RIGHT");
         this.startFacingDirection = facingDirection;
         this.initialize();
     }
@@ -113,7 +118,7 @@ public class BugEnemy extends Enemy {
         float moveAmountX = 0;
         float moveAmountY = 0;
 
-        moveAmountY += gravity;
+        moveAmountY += gravity + momentumY;
 
         if (hurtTimer > 0) {
             hurtTimer--;
@@ -151,6 +156,12 @@ public class BugEnemy extends Enemy {
         }
 
         moveYHandleCollision(moveAmountY);
+
+        // build up fall speed while airborne so it drops at a believable rate
+        if (airGroundState == AirGroundState.AIR) {
+            momentumY = Math.min(momentumY + momentumYIncrease, terminalVelocityY);
+        }
+
         moveXHandleCollision(moveAmountX);
 
         boolean right = facingDirection == Direction.RIGHT;
@@ -194,6 +205,7 @@ public class BugEnemy extends Enemy {
         // if it is not colliding with the ground, it means that it's currently in the air, so its air ground state is changed to AIR
         if (direction == Direction.DOWN) {
             if (hasCollided) {
+                momentumY = 0;
                 airGroundState = AirGroundState.GROUND;
             } else {
                 airGroundState = AirGroundState.AIR;

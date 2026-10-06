@@ -2,6 +2,7 @@ package Maps;
 
 import Enemies.BugEnemy;
 import Enemies.DinosaurEnemy;
+import Enemies.HobGoblin;
 import Engine.ImageLoader;
 import EnhancedMapTiles.EndLevelBox;
 import EnhancedMapTiles.HorizontalMovingPlatform;
@@ -30,9 +31,10 @@ public class TestMap extends Map {
         BugEnemy bugEnemy = new BugEnemy(getMapTile(16, 10).getLocation().subtractY(80), Direction.LEFT);
         enemies.add(bugEnemy);
 
-       
-        DinosaurEnemy dinosaurEnemy = new DinosaurEnemy(getMapTile(19, 1).getLocation().addY(2), getMapTile(22, 1).getLocation().addY(2), Direction.RIGHT);
-        enemies.add(dinosaurEnemy);
+        HobGoblin hobgob = new HobGoblin(getMapTile(19, 1).getLocation().subtractY(80), Direction.LEFT);
+        enemies.add(hobgob);
+        
+        
 
         return enemies;
     }
