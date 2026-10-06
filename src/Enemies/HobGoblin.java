@@ -5,7 +5,7 @@ import GameObject.SpriteSheet;
 import Utils.Direction;
 import Utils.Point;
 
-public class HobGoblin extends BugEnemy {
+public class HobGoblin extends Goblin {
 
     public HobGoblin(Point location, Direction facingDirection) {
         super(location, facingDirection,

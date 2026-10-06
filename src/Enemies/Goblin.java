@@ -20,7 +20,7 @@ import java.util.HashMap;
 // This class is for the black bug enemy
 // enemy behaves like a Mario goomba -- walks forward until it hits a solid map tile, and then turns around
 // if it ends up in the air from walking off a cliff, it will fall down until it hits the ground again, and then will continue walking
-public class BugEnemy extends Enemy {
+public class Goblin extends Enemy {
     protected float gravity = .5f;
     protected float momentumY = 0;
     protected float momentumYIncrease = .5f;
@@ -50,11 +50,11 @@ public class BugEnemy extends Enemy {
     protected int attackCooldownTimer = 0;
    
 
-    public BugEnemy(Point location, Direction facingDirection) {
+    public Goblin(Point location, Direction facingDirection) {
         this(location, facingDirection, new SpriteSheet(ImageLoader.load("Goblin.png"), 104, 80));
     }
 
-    protected BugEnemy(Point location, Direction facingDirection, SpriteSheet spriteSheet) {
+    protected Goblin(Point location, Direction facingDirection, SpriteSheet spriteSheet) {
         super(location.x, location.y, spriteSheet, "WALK_RIGHT");
         this.startFacingDirection = facingDirection;
         this.initialize();

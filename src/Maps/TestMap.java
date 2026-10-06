@@ -1,7 +1,8 @@
 package Maps;
 
-import Enemies.BugEnemy;
+
 import Enemies.DinosaurEnemy;
+import Enemies.Goblin;
 import Enemies.HobGoblin;
 import Engine.ImageLoader;
 import EnhancedMapTiles.EndLevelBox;
@@ -32,21 +33,13 @@ public class TestMap extends Map {
         
         ArrayList<Enemy> enemies = new ArrayList<>();
 
-        BugEnemy bugEnemy1 = new BugEnemy(getMapTile(50, 53).getLocation().subtractY(80), Direction.LEFT);
-        enemies.add(bugEnemy1);
+        Goblin gob1 = new Goblin(getMapTile(50, 53).getLocation().subtractY(80), Direction.LEFT);
+        enemies.add(gob1);
 
-<<<<<<< HEAD
-        BugEnemy bugEnemy2 = new BugEnemy(getMapTile(54, 27).getLocation().subtractY(80), Direction.RIGHT);
-        enemies.add(bugEnemy2);
-
-        BugEnemy bugEnemy3 = new BugEnemy(getMapTile(77, 27).getLocation().subtractY(80), Direction.LEFT);
-        enemies.add(bugEnemy3);
-=======
-        HobGoblin hobgob = new HobGoblin(getMapTile(19, 1).getLocation().subtractY(80), Direction.LEFT);
+        HobGoblin hobgob = new HobGoblin(getMapTile(50, 53).getLocation().subtractY(80), Direction.LEFT);
         enemies.add(hobgob);
         
         
->>>>>>> fa9d6bf28ab9cf682d1da72df123834b06ab1db7
 
         return enemies;
     }
