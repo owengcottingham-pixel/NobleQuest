@@ -561,18 +561,16 @@ public abstract class Player extends GameObject {
         }
     }
 
-public void hurtPlayer(MapEntity mapEntity) {
+    public void hurtPlayer(MapEntity mapEntity) {
+        if (mapEntity == null || isInvincible || levelState != LevelState.RUNNING) {
+            return;
+        }
 
-    if (!isInvincible) {
-
-        // Enemies AND falling objects kill the player on touch
-        if (mapEntity instanceof Enemy ||
-            mapEntity instanceof FallingObject) {
-
+        // Enemies and falling objects are lethal on contact.
+        if (mapEntity instanceof Enemy || mapEntity instanceof FallingObject) {
             levelState = LevelState.PLAYER_DEAD;
         }
     }
-}
 
     // other entities can call this to tell the player they beat a level
     public void completeLevel() {

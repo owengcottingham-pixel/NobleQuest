@@ -9,6 +9,7 @@ public class MenuBar extends JMenuBar {
     JCheckBoxMenuItem showNpcs;
     JCheckBoxMenuItem showEnchancedMapTiles;
     JCheckBoxMenuItem showTriggers;
+    JCheckBoxMenuItem placeDisappearingPlatform;
 
     public MenuBar(TileBuilder tileBuilder) {
         options = new JMenu("Options");
@@ -28,6 +29,20 @@ public class MenuBar extends JMenuBar {
             }
         });
         options.add(showEnchancedMapTiles);
+
+        placeDisappearingPlatform = new JCheckBoxMenuItem("Place Disappearing Platform");
+        placeDisappearingPlatform.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tileBuilder.setPlaceDisappearingPlatform(placeDisappearingPlatform.isSelected());
+                if (placeDisappearingPlatform.isSelected() && !tileBuilder.getShowEnhancedMapTiles()) {
+                    tileBuilder.setShowEnhancedMapTiles(true);
+                    showEnchancedMapTiles.setSelected(true);
+                }
+            }
+        });
+        options.add(placeDisappearingPlatform);
+
         showTriggers = new JCheckBoxMenuItem("Show Enemies");
         showTriggers.addActionListener(new ActionListener() {
             @Override
