@@ -11,6 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.awt.image.BufferedImage;
 
 /*
     This class is for defining a map that is used for a specific level
@@ -23,6 +24,10 @@ import java.util.Scanner;
 */
 
 public abstract class Map {
+
+    // background
+    protected BufferedImage background;
+
     // the tile map (map tiles that make up the entire map image)
     protected MapTile[] mapTiles;
 
@@ -394,6 +399,9 @@ public abstract class Map {
     }
 
     public void draw(GraphicsHandler graphicsHandler) {
+        if (background != null) {
+            graphicsHandler.drawImage(background, 0, 0, ScreenManager.getScreenWidth(), ScreenManager.getScreenHeight());
+        }
         camera.draw(graphicsHandler);
     }
 

@@ -10,6 +10,7 @@ import Level.Map;
 import Level.Player;
 import Level.PlayerListener;
 import Maps.TestMap;
+import Maps.Level1;
 import Players.Knight;
 import Engine.ImageLoader;
 import Utils.NumberDisplay;
@@ -36,7 +37,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
     public void initialize() {
         // define/setup map
-        this.map = new TestMap();
+        this.map = new Level1();
 
         // setup player
         this.player = new Knight(map.getPlayerStartPosition().x, map.getPlayerStartPosition().y);

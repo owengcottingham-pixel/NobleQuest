@@ -18,10 +18,10 @@ import EnhancedMapTiles.FallingObject;
 import java.util.ArrayList;
 
 // Represents a test map to be used in a level
-public class TestMap extends Map {
+public class Level1 extends Map {
 
-    public TestMap() {
-        super("test_map.txt", new CommonTileset());
+    public Level1() {
+        super("level1_map.txt", new CommonTileset());
         this.playerStartPosition = getMapTile(3, 40).getLocation();
         this.background = ImageLoader.load("Background.png");
     }
@@ -206,7 +206,7 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
     public ArrayList<NPC> loadNPCs() {
         ArrayList<NPC> npcs = new ArrayList<>();
 
-        Walrus walrus = new Walrus(getMapTile(30, 10).getLocation().subtractY(13));
+        Walrus walrus = new Walrus(getMapTile(12, 41).getLocation().subtractY(13));
         npcs.add(walrus);
 
         return npcs;

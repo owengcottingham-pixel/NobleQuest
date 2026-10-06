@@ -275,6 +275,16 @@ public class CommonTileset extends Tileset {
 
         mapTiles.add(Stonetile1);
 
+        // invisible tile
+        Frame invisibleFrame = new FrameBuilder(getSubImage(4, 2))
+                .withScale(tileScale)
+                .build();
+
+        MapTileBuilder invisibleTile = new MapTileBuilder(invisibleFrame)
+                .withTileType(TileType.PASSABLE);
+
+        mapTiles.add(invisibleTile);
+
         return mapTiles;
     }
 

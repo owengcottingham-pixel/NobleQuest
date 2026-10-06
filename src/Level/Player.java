@@ -43,6 +43,9 @@ public abstract class Player extends GameObject {
     protected java.util.ArrayList<Float> dashTrailX = new java.util.ArrayList<>();
     protected java.util.ArrayList<Float> dashTrailY = new java.util.ArrayList<>();
     protected int dashTrailLength = 5;
+    protected float velocityX = 0;
+    protected float acceleration = 0.3f;
+    protected float deceleration = 0.4f;
 
     // values used to keep track of player's current state
     protected PlayerState playerState;
@@ -153,7 +156,24 @@ public abstract class Player extends GameObject {
             previousAirGroundState = airGroundState;
 
             // move player with respect to map collisions
-            lastAmountMovedX = super.moveXHandleCollision(moveAmountX);
+            float targetX = moveAmountX;
+
+            if (playerState == PlayerState.DASHING) {
+                velocityX = targetX;
+            } else {
+                float rate = (targetX != 0) ? acceleration : deceleration;
+                if (targetX != 0 && Math.signum(targetX) != Math.signum(velocityX)) {
+                    rate = acceleration * 3.0f;
+                }
+                if (velocityX < targetX) {
+                    velocityX = Math.min(velocityX + rate, targetX);
+                } else if (velocityX > targetX) {
+                    velocityX = Math.max(velocityX - rate, targetX);
+                }
+            }
+
+            lastAmountMovedX = super.moveXHandleCollision(velocityX);
+            
             lastAmountMovedY = super.moveYHandleCollision(moveAmountY);
 
             handlePlayerAnimation();
@@ -370,10 +390,14 @@ public abstract class Player extends GameObject {
 
             if (Keyboard.isKeyDown(MOVE_LEFT_KEY)) {
                 moveAmountX -= walkSpeed;
+                facingDirection = Direction.LEFT;
+                currentAnimationName = "JUMP_LEFT";
             }
 
             else if (Keyboard.isKeyDown(MOVE_RIGHT_KEY)) {
                 moveAmountX += walkSpeed;
+                facingDirection = Direction.RIGHT;
+                currentAnimationName = "JUMP_RIGHT";
             }
 
             if (moveAmountY > 0) {
@@ -384,6 +408,13 @@ public abstract class Player extends GameObject {
         else if (previousAirGroundState == AirGroundState.AIR && airGroundState == AirGroundState.GROUND) {
             playerState = PlayerState.STANDING;
         }
+    }
+
+    public void bounce(float force) {
+        jumpForce = force;
+        momentumY = 0;
+        airGroundState = AirGroundState.AIR;
+        playerState = PlayerState.JUMPING;
     }
 
     protected void increaseMomentum() {
@@ -491,6 +522,9 @@ public abstract class Player extends GameObject {
         boolean hasCollided,
         Direction direction,
         MapEntity entityCollidedWith) {
+        if (hasCollided) {
+            velocityX = 0;
+        }
     }
 
     @Override
@@ -502,9 +536,11 @@ public abstract class Player extends GameObject {
         if (direction == Direction.DOWN) {
 
             if (hasCollided) {
+                if (airGroundState == AirGroundState.AIR) {
+                dashCooldownTimer = 0; // just landed, dash is ready again
+                }
                 momentumY = 0;
                 airGroundState = AirGroundState.GROUND;
-
             } else {
             if (playerState != PlayerState.DASHING) {
                 playerState = PlayerState.JUMPING;
