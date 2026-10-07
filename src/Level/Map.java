@@ -59,6 +59,8 @@ public abstract class Map {
     // lists to hold map entities that are a part of the map
     protected ArrayList<Enemy> enemies;
     protected ArrayList<EnhancedMapTile> enhancedMapTiles;
+    // Enhanced map tiles placed through the map editor and stored in the map file.
+    protected ArrayList<EnhancedMapTile> editorEnhancedMapTiles;
     protected ArrayList<NPC> npcs;
 
     // if set to false, camera will not move as player moves
@@ -85,6 +87,7 @@ public abstract class Map {
     // and instantiates a Camera
     public void setupMap() {
         this.animatedMapTiles = new ArrayList<>();
+        this.editorEnhancedMapTiles = new ArrayList<>();
 
         loadMapFile();
 
@@ -94,6 +97,7 @@ public abstract class Map {
         }
 
         this.enhancedMapTiles = loadEnhancedMapTiles();
+        this.enhancedMapTiles.addAll(this.editorEnhancedMapTiles);
         for (EnhancedMapTile enhancedMapTile: this.enhancedMapTiles) {
             enhancedMapTile.setMap(this);
         }
@@ -147,6 +151,33 @@ public abstract class Map {
                 if (tile.isAnimated()) {
                     animatedMapTiles.add(tile);
                 }
+            }
+        }
+
+        // Optional editor-created enhanced tiles are stored after the normal tile grid.
+        // Older map files have no extra data, so they continue to work normally.
+        while (fileInput.hasNext()) {
+            String objectType = fileInput.next();
+            if (objectType.equals("DISAPPEARING_PLATFORM")) {
+                float x = fileInput.nextFloat();
+                float y = fileInput.nextFloat();
+                float scale = fileInput.nextFloat();
+                int boundsX = fileInput.nextInt();
+                int boundsY = fileInput.nextInt();
+                int boundsWidth = fileInput.nextInt();
+                int boundsHeight = fileInput.nextInt();
+
+                EnhancedMapTile disappearingPlatform = new EnhancedMapTiles.DisappearingPlatform(
+                    x,
+                    y,
+                    scale,
+                    new GameObject.Rectangle(boundsX, boundsY, boundsWidth, boundsHeight)
+                );
+                disappearingPlatform.setMap(this);
+                editorEnhancedMapTiles.add(disappearingPlatform);
+            } else {
+                // Ignore unknown editor objects so future editor additions remain backwards compatible.
+                break;
             }
         }
 
@@ -286,6 +317,24 @@ public abstract class Map {
     }
     public ArrayList<EnhancedMapTile> getEnhancedMapTiles() {
         return enhancedMapTiles;
+    }
+
+    // Adds an enhanced tile placed by the map editor.
+    public void addEditorEnhancedMapTile(EnhancedMapTile enhancedMapTile) {
+        enhancedMapTile.setMap(this);
+        this.editorEnhancedMapTiles.add(enhancedMapTile);
+        this.enhancedMapTiles.add(enhancedMapTile);
+    }
+
+    // Removes an enhanced tile placed by the map editor.
+    public boolean removeEditorEnhancedMapTile(EnhancedMapTile enhancedMapTile) {
+        boolean removed = this.editorEnhancedMapTiles.remove(enhancedMapTile);
+        this.enhancedMapTiles.remove(enhancedMapTile);
+        return removed;
+    }
+
+    public ArrayList<EnhancedMapTile> getEditorEnhancedMapTiles() {
+        return editorEnhancedMapTiles;
     }
     public ArrayList<NPC> getNPCs() {
         return npcs;

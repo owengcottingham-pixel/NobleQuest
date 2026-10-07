@@ -7,6 +7,7 @@ import Engine.ImageLoader;
 import EnhancedMapTiles.EndLevelBox;
 import EnhancedMapTiles.HorizontalMovingPlatform;
 import EnhancedMapTiles.VerticalMovingPlatform;
+import EnhancedMapTiles.DisappearingPlatform;
 import EnhancedMapTiles.BouncyPlatform;
 import EnhancedMapTiles.SuperBouncyPlatform;
 import GameObject.Rectangle;
@@ -60,6 +61,38 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
     );
 
     enhancedMapTiles.add(vmp);
+
+    DisappearingPlatform dp1 = new DisappearingPlatform(
+        getMapTile(44, 44).getX(),
+        getMapTile(44, 44).getY(),
+        3,
+        new Rectangle(0, 6, 16, 4),
+        4
+    );
+
+    enhancedMapTiles.add(dp1);
+
+    DisappearingPlatform dp2 = new DisappearingPlatform(
+        getMapTile(44, 46).getX(),
+        getMapTile(44, 46).getY(),
+        3,
+        new Rectangle(0, 6, 16, 4),
+        4
+    );
+
+    enhancedMapTiles.add(dp2);
+    
+    DisappearingPlatform dp3 = new DisappearingPlatform(
+        getMapTile(44, 48).getX(),
+        getMapTile(44, 48).getY(),
+        3,
+        new Rectangle(0, 6, 16, 4),
+        4
+    );
+
+    enhancedMapTiles.add(dp3);
+
+  
 
     BouncyPlatform bouncy1 = new BouncyPlatform(
     ImageLoader.load("BouncyPlatform.png"),

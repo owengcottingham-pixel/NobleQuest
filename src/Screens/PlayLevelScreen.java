@@ -45,7 +45,6 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         this.player.addListener(this);
 
         coinIcon = ImageLoader.load("Coin.png");
-        coinIcon = ImageLoader.load("Coin.png");
         coinDisplay = new NumberDisplay(
         new SpriteSheet(ImageLoader.load("Digits.png"), 8, 10), 3);
 
@@ -89,7 +88,6 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             case RUNNING:
                 map.draw(graphicsHandler);
                 player.draw(graphicsHandler);
-                graphicsHandler.drawImage(coinIcon, SCREEN_WIDTH - 112, 14, 28, 28);
                 graphicsHandler.drawImage(coinIcon, SCREEN_WIDTH - 112, 14, 28, 28);
                 coinDisplay.draw(graphicsHandler, player.getCoins(), SCREEN_WIDTH - 78, 12);
                 drawDashBar(graphicsHandler);

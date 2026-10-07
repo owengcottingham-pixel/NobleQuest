@@ -82,30 +82,32 @@ public class FallingObject extends EnhancedMapTile {
                 velocityY = terminalVelocity;
             }
 
-            // Move the object downward FIRST.
+            // Check before moving as well as after moving. This prevents a
+            // collision from being missed when the object starts a frame
+            // overlapping the player.
+            if (getBounds().intersects(player)) {
+                killPlayerAndRemove(player);
+                return;
+            }
+
             moveYHandleCollision(velocityY);
 
-            /*
-             * Check for the player AFTER moving.
-             *
-             * This is important because checking before movement
-             * can cause the object to miss the player.
-             */
+            // Check again after movement so the object cannot pass through
+            // the player between frames.
             if (getBounds().intersects(player)) {
-
-                // Kill the player using the game's existing
-                // player damage/death system.
-                player.hurtPlayer(this);
-
-                // Remove the object's collision/hitbox.
-                state = State.DISAPPEARING;
-                setMapEntityStatus(MapEntityStatus.REMOVED);
-
+                killPlayerAndRemove(player);
                 return;
             }
         }
 
         super.update(player);
+    }
+
+    private void killPlayerAndRemove(Player player) {
+        player.hurtPlayer(this);
+        velocityY = 0;
+        state = State.DISAPPEARING;
+        setMapEntityStatus(MapEntityStatus.REMOVED);
     }
 
     @Override
