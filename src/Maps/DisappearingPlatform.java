@@ -19,6 +19,7 @@ public class DisappearingPlatform extends EnhancedMapTile {
     private static final int DECAY_START = 60;
 
     private int standingTimer = 0;
+    private boolean triggered = false;
     private State state = State.NORMAL;
 
     private enum State {
@@ -62,6 +63,10 @@ public class DisappearingPlatform extends EnhancedMapTile {
             && player.getAirGroundState() == AirGroundState.GROUND;
 
         if (playerStandingOnPlatform) {
+            triggered = true;
+        }
+
+        if (triggered) {
             standingTimer++;
 
             if (standingTimer >= DECAY_START) {
@@ -73,9 +78,6 @@ public class DisappearingPlatform extends EnhancedMapTile {
                 setMapEntityStatus(MapEntityStatus.REMOVED);
                 return;
             }
-        } else {
-            standingTimer = 0;
-            state = State.NORMAL;
         }
 
         super.update(player);

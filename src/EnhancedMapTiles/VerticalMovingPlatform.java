@@ -17,6 +17,7 @@ public class VerticalMovingPlatform extends EnhancedMapTile {
     private Point startLocation;
     private Point endLocation;
     private float movementSpeed = 2f;
+    private float startOffset = 0;
     private Direction startDirection;
     private Direction direction;
 
@@ -26,6 +27,7 @@ public class VerticalMovingPlatform extends EnhancedMapTile {
         this.endLocation = endLocation;
         this.startDirection = startDirection;
         this.initialize();
+        this.setIsUpdateOffScreen(true);
     }
 
     public VerticalMovingPlatform(BufferedImage image, Point startLocation, Point endLocation, TileType tileType, float scale, Rectangle bounds, Direction startDirection, int lengthMultiplier) {
@@ -47,10 +49,17 @@ public class VerticalMovingPlatform extends EnhancedMapTile {
         return repeatedImage;
     }
 
+    public void setStartOffset(float tiles) {
+        this.startOffset = tiles * 48;
+        initialize();
+    }
+
     @Override
     public void initialize() {
         super.initialize();
         direction = startDirection;
+        moveY(startOffset);
+
     }
 
     @Override
@@ -84,7 +93,26 @@ public class VerticalMovingPlatform extends EnhancedMapTile {
 
         if (playerIsRiding) {
             float playerTargetY2 = getBounds().getY1() - 1;
-            player.moveYHandleCollision(playerTargetY2 - player.getBounds().getY2());
+            float snapAmount = playerTargetY2 - player.getBounds().getY2();
+
+            if (moveAmountY > 0) {
+                snapAmount += 1;
+            }
+            player.moveYHandleCollision(snapAmount);
+        }
+
+                // catch a falling player whose feet slipped just inside the platform this frame
+        float playerBottom = player.getBounds().getY2();
+        float platformTop = getBounds().getY1();
+        boolean overlapsX = player.getBounds().getX2() > getBounds().getX1()
+                && player.getBounds().getX1() < getBounds().getX2();
+
+        if (!playerIsRiding && overlapsX
+                && player.getLastAmountMovedY() >= 0      // falling, not jumping up through it
+                && playerBottom >= platformTop - 1
+                && playerBottom <= platformTop + 12) {    // only if just barely inside
+            player.moveYHandleCollision((platformTop - 1) - playerBottom); // pop up onto the top
+            player.moveYHandleCollision(1);                                // tap down so you "land"
         }
 
         super.update(player);

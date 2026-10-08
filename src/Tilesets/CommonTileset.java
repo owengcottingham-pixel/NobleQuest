@@ -392,6 +392,24 @@ public class CommonTileset extends Tileset {
             }
         }
 
+        // spikes (row 11 = stone, row 12 = grass): floor, ceiling, left wall, right wall
+        int[][] spikeBounds = {
+                {1, 10, 14, 6},  // points up (on a floor)
+                {1, 0, 14, 6},   // points down (on a ceiling)
+                {0, 1, 6, 14},   // points right (on a wall to the left)
+                {10, 1, 6, 14}   // points left (on a wall to the right)
+        };
+        for (int row = 11; row <= 12; row++) {
+            for (int col = 0; col < 4; col++) {
+                int[] b = spikeBounds[col];
+                Frame spikeFrame = new FrameBuilder(getSubImage(row, col))
+                        .withScale(tileScale)
+                        .withBounds(b[0], b[1], b[2], b[3])
+                        .build();
+                mapTiles.add(new MapTileBuilder(spikeFrame).withTileType(TileType.SPIKES));
+            }
+        }
+
         return mapTiles;
     }
 
@@ -433,5 +451,7 @@ public class CommonTileset extends Tileset {
         }
         return new TileLayout(layout, Direction.RIGHT);
     }
+
+    
 
 }

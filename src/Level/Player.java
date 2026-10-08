@@ -19,6 +19,7 @@ public abstract class Player extends GameObject {
     protected int health = maxHealth;
     protected int invincibilityTimer = 0;
     protected int invincibilityDuration = 90;   // 1.5s at 60fps
+    protected int deathTimer = 0;
     
     // values that affect player movement
 
@@ -117,11 +118,35 @@ public abstract class Player extends GameObject {
         }
     }
 
+    // hurts the player if they are touching any spike tile placed in the map editor
+    private void checkSpikeTiles() {
+        if (map == null) {
+            return;
+        }
+        int x1 = Math.round(getBounds().getX1());
+        int x2 = Math.round(getBounds().getX2());
+        int y1 = Math.round(getBounds().getY1());
+        int y2 = Math.round(getBounds().getY2());
+        int step = 24; // half a tile, so no spike tile gets skipped
+
+        for (int x = x1; x <= x2 + step; x += step) {
+            for (int y = y1; y <= y2 + step; y += step) {
+                MapTile tile = map.getTileByPosition(Math.min(x, x2), Math.min(y, y2));
+                if (tile != null && tile.getTileType() == TileType.SPIKES && tile.intersects(this)) {
+                    damage(3); // 5 health, so two hits kills
+                    return;
+                }
+            }
+        }
+    }
+
     public boolean isAttacking() {
         return currentAnimationName.startsWith("ATTACK");
     }
 
-    
+    public float getLastAmountMovedY() {
+    return lastAmountMovedY;
+}
 
     public void update() {
         if (invincibilityTimer > 0) {
@@ -175,6 +200,8 @@ public abstract class Player extends GameObject {
             lastAmountMovedX = super.moveXHandleCollision(velocityX);
             
             lastAmountMovedY = super.moveYHandleCollision(moveAmountY);
+
+            checkSpikeTiles();
 
             handlePlayerAnimation();
 
@@ -597,7 +624,14 @@ public abstract class Player extends GameObject {
             currentAnimationName = "WALK_RIGHT";
 
             super.update();
-            moveXHandleCollision(walkSpeed);
+            float moved = moveXHandleCollision(walkSpeed);
+
+            // if something is blocking the walk-off (like the cave wall), end the level right away
+            if (moved == 0) {
+                for (PlayerListener listener : listeners) {
+                    listener.onLevelCompleted();
+                }
+            }
         }
 
         else {
@@ -631,14 +665,10 @@ public abstract class Player extends GameObject {
         }
 
         // player falls off screen after death animation
+        // after the death animation, pause for a moment then show the death screen
         else if (currentFrameIndex == getCurrentAnimation().length - 1) {
-
-            if (map.getCamera().containsDraw(this)) {
-                moveY(3);
-            }
-
-            else {
-
+            deathTimer++;
+            if (deathTimer >= 45) {   // about 3/4 of a second
                 for (PlayerListener listener : listeners) {
                     listener.onDeath();
                 }

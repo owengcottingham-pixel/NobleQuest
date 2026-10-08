@@ -16,10 +16,11 @@ import java.awt.image.BufferedImage;
 
 public class DisappearingPlatform extends EnhancedMapTile {
 
-    private static final int TOTAL_TIME = 120;
-    private static final int DECAY_START = 60;
+    private static final int TOTAL_TIME = 60;
+    private static final int DECAY_START = 20;
 
     private int standingTimer = 0;
+    private boolean triggered = false;
     private State state = State.NORMAL;
 
     private enum State {
@@ -92,6 +93,9 @@ public class DisappearingPlatform extends EnhancedMapTile {
             && player.getAirGroundState() == AirGroundState.GROUND;
 
         if (playerStandingOnPlatform) {
+            triggered = true;
+        }
+        if (triggered) {
             standingTimer++;
 
             if (standingTimer >= DECAY_START) {
@@ -103,9 +107,6 @@ public class DisappearingPlatform extends EnhancedMapTile {
                 setMapEntityStatus(MapEntityStatus.REMOVED);
                 return;
             }
-        } else {
-            standingTimer = 0;
-            state = State.NORMAL;
         }
 
         super.update(player);
@@ -144,8 +145,8 @@ public class DisappearingPlatform extends EnhancedMapTile {
             shake = 1;
         }
 
-        int drawX = Math.round(getX()) + shake;
-        int drawY = Math.round(getY());
+        int drawX = Math.round(getCalibratedXLocation()) + shake;
+        int drawY = Math.round(getCalibratedYLocation());
 
         java.awt.Composite oldComposite = g.getComposite();
 
@@ -179,30 +180,11 @@ public class DisappearingPlatform extends EnhancedMapTile {
         g.setColor(new Color(45, 25, 15));
         g.setStroke(new BasicStroke(2));
 
-        int x1 =
-            Math.round(
-                getX() + getWidth() * 0.30f
-            );
-
-        int x2 =
-            Math.round(
-                getX() + getWidth() * 0.62f
-            );
-
-        int yTop =
-            Math.round(
-                getY() + getHeight() * 0.15f
-            );
-
-        int yMiddle =
-            Math.round(
-                getY() + getHeight() * 0.50f
-            );
-
-        int yBottom =
-            Math.round(
-                getY() + getHeight() * 0.85f
-            );
+        int x1 = Math.round(getCalibratedXLocation() + getWidth() * 0.30f);
+        int x2 = Math.round(getCalibratedXLocation() + getWidth() * 0.62f);
+        int yTop = Math.round(getCalibratedYLocation() + getHeight() * 0.15f);
+        int yMiddle = Math.round(getCalibratedYLocation() + getHeight() * 0.50f);
+        int yBottom = Math.round(getCalibratedYLocation() + getHeight() * 0.85f); 
 
         g.drawLine(
             x1,
