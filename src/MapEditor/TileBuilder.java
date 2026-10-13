@@ -1,6 +1,8 @@
 package MapEditor;
 
 import Engine.GraphicsHandler;
+import EnhancedMapTiles.DisappearingPlatform;
+import GameObject.Rectangle;
 import Level.*;
 import Utils.Colors;
 
@@ -19,6 +21,7 @@ public class TileBuilder extends JPanel {
     private boolean showNPCs;
     private boolean showEnhancedMapTiles;
     private boolean showEnemies;
+    private boolean placeDisappearingPlatform;
 
     public TileBuilder(SelectedTileIndexHolder controlPanelHolder, JLabel hoveredTileIndexLabel) {
         setBackground(Colors.MAGENTA);
@@ -113,14 +116,43 @@ public class TileBuilder extends JPanel {
 
     public void tileSelected(Point selectedPoint) {
         int selectedTileIndex = getSelectedTileIndex(selectedPoint);
-        if (selectedTileIndex != -1) {
-            MapTile oldMapTile = map.getMapTiles()[selectedTileIndex];
-            MapTile newMapTile =  map.getTileset().getTile(controlPanelHolder.getSelectedTileIndex()).build(oldMapTile.getX(), oldMapTile.getY());
-            newMapTile.setMap(map);
-            map.getMapTiles()[selectedTileIndex] = newMapTile;
-
+        if (selectedTileIndex == -1) {
+            return;
         }
+
+        MapTile selectedMapTile = map.getMapTiles()[selectedTileIndex];
+
+        if (placeDisappearingPlatform) {
+            // Avoid placing duplicates on the same tile.
+            if (!hasDisappearingPlatformAt(selectedMapTile.getX(), selectedMapTile.getY())) {
+                DisappearingPlatform platform = new DisappearingPlatform(
+                    selectedMapTile.getX(),
+                    selectedMapTile.getY(),
+                    3,
+                    new Rectangle(0, 6, 16, 4)
+                );
+                map.addEditorEnhancedMapTile(platform);
+            }
+            repaint();
+            return;
+        }
+
+        MapTile newMapTile = map.getTileset().getTile(controlPanelHolder.getSelectedTileIndex())
+            .build(selectedMapTile.getX(), selectedMapTile.getY());
+        newMapTile.setMap(map);
+        map.getMapTiles()[selectedTileIndex] = newMapTile;
         repaint();
+    }
+
+    private boolean hasDisappearingPlatformAt(float x, float y) {
+        for (EnhancedMapTile tile : map.getEditorEnhancedMapTiles()) {
+            if (tile instanceof DisappearingPlatform
+                    && Math.round(tile.getX()) == Math.round(x)
+                    && Math.round(tile.getY()) == Math.round(y)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void tileHovered(Point hoveredPoint) {
@@ -173,6 +205,20 @@ public class TileBuilder extends JPanel {
     public void setShowEnhancedMapTiles(boolean showEnhancedMapTiles) {
         this.showEnhancedMapTiles = showEnhancedMapTiles;
         repaint();
+    }
+
+
+    public boolean getPlaceDisappearingPlatform() {
+        return placeDisappearingPlatform;
+    }
+
+    public void setPlaceDisappearingPlatform(boolean placeDisappearingPlatform) {
+        this.placeDisappearingPlatform = placeDisappearingPlatform;
+        if (placeDisappearingPlatform) {
+            setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+        } else {
+            setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+        }
     }
 
     public boolean getShowEnemies() {

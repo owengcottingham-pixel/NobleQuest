@@ -19,6 +19,7 @@ public abstract class Player extends GameObject {
     protected int health = maxHealth;
     protected int invincibilityTimer = 0;
     protected int invincibilityDuration = 90;   // 1.5s at 60fps
+    protected int deathTimer = 0;
     
     // values that affect player movement
 
@@ -43,6 +44,9 @@ public abstract class Player extends GameObject {
     protected java.util.ArrayList<Float> dashTrailX = new java.util.ArrayList<>();
     protected java.util.ArrayList<Float> dashTrailY = new java.util.ArrayList<>();
     protected int dashTrailLength = 5;
+    protected float velocityX = 0;
+    protected float acceleration = 0.3f;
+    protected float deceleration = 0.4f;
 
     // values used to keep track of player's current state
     protected PlayerState playerState;
@@ -114,11 +118,35 @@ public abstract class Player extends GameObject {
         }
     }
 
+    // hurts the player if they are touching any spike tile placed in the map editor
+    private void checkSpikeTiles() {
+        if (map == null) {
+            return;
+        }
+        int x1 = Math.round(getBounds().getX1());
+        int x2 = Math.round(getBounds().getX2());
+        int y1 = Math.round(getBounds().getY1());
+        int y2 = Math.round(getBounds().getY2());
+        int step = 24; // half a tile, so no spike tile gets skipped
+
+        for (int x = x1; x <= x2 + step; x += step) {
+            for (int y = y1; y <= y2 + step; y += step) {
+                MapTile tile = map.getTileByPosition(Math.min(x, x2), Math.min(y, y2));
+                if (tile != null && tile.getTileType() == TileType.SPIKES && tile.intersects(this)) {
+                    damage(3); // 5 health, so two hits kills
+                    return;
+                }
+            }
+        }
+    }
+
     public boolean isAttacking() {
         return currentAnimationName.startsWith("ATTACK");
     }
 
-    
+    public float getLastAmountMovedY() {
+    return lastAmountMovedY;
+}
 
     public void update() {
         if (invincibilityTimer > 0) {
@@ -153,8 +181,27 @@ public abstract class Player extends GameObject {
             previousAirGroundState = airGroundState;
 
             // move player with respect to map collisions
-            lastAmountMovedX = super.moveXHandleCollision(moveAmountX);
+            float targetX = moveAmountX;
+
+            if (playerState == PlayerState.DASHING) {
+                velocityX = targetX;
+            } else {
+                float rate = (targetX != 0) ? acceleration : deceleration;
+                if (targetX != 0 && Math.signum(targetX) != Math.signum(velocityX)) {
+                    rate = acceleration * 3.0f;
+                }
+                if (velocityX < targetX) {
+                    velocityX = Math.min(velocityX + rate, targetX);
+                } else if (velocityX > targetX) {
+                    velocityX = Math.max(velocityX - rate, targetX);
+                }
+            }
+
+            lastAmountMovedX = super.moveXHandleCollision(velocityX);
+            
             lastAmountMovedY = super.moveYHandleCollision(moveAmountY);
+
+            checkSpikeTiles();
 
             handlePlayerAnimation();
 
@@ -370,10 +417,14 @@ public abstract class Player extends GameObject {
 
             if (Keyboard.isKeyDown(MOVE_LEFT_KEY)) {
                 moveAmountX -= walkSpeed;
+                facingDirection = Direction.LEFT;
+                currentAnimationName = "JUMP_LEFT";
             }
 
             else if (Keyboard.isKeyDown(MOVE_RIGHT_KEY)) {
                 moveAmountX += walkSpeed;
+                facingDirection = Direction.RIGHT;
+                currentAnimationName = "JUMP_RIGHT";
             }
 
             if (moveAmountY > 0) {
@@ -384,6 +435,13 @@ public abstract class Player extends GameObject {
         else if (previousAirGroundState == AirGroundState.AIR && airGroundState == AirGroundState.GROUND) {
             playerState = PlayerState.STANDING;
         }
+    }
+
+    public void bounce(float force) {
+        jumpForce = force;
+        momentumY = 0;
+        airGroundState = AirGroundState.AIR;
+        playerState = PlayerState.JUMPING;
     }
 
     protected void increaseMomentum() {
@@ -491,6 +549,9 @@ public abstract class Player extends GameObject {
         boolean hasCollided,
         Direction direction,
         MapEntity entityCollidedWith) {
+        if (hasCollided) {
+            velocityX = 0;
+        }
     }
 
     @Override
@@ -502,9 +563,11 @@ public abstract class Player extends GameObject {
         if (direction == Direction.DOWN) {
 
             if (hasCollided) {
+                if (airGroundState == AirGroundState.AIR) {
+                dashCooldownTimer = 0; // just landed, dash is ready again
+                }
                 momentumY = 0;
                 airGroundState = AirGroundState.GROUND;
-
             } else {
             if (playerState != PlayerState.DASHING) {
                 playerState = PlayerState.JUMPING;
@@ -525,18 +588,16 @@ public abstract class Player extends GameObject {
         }
     }
 
-public void hurtPlayer(MapEntity mapEntity) {
+    public void hurtPlayer(MapEntity mapEntity) {
+        if (mapEntity == null || isInvincible || levelState != LevelState.RUNNING) {
+            return;
+        }
 
-    if (!isInvincible) {
-
-        // Enemies AND falling objects kill the player on touch
-        if (mapEntity instanceof Enemy ||
-            mapEntity instanceof FallingObject) {
-
+        // Enemies and falling objects are lethal on contact.
+        if (mapEntity instanceof Enemy || mapEntity instanceof FallingObject) {
             levelState = LevelState.PLAYER_DEAD;
         }
     }
-}
 
     // other entities can call this to tell the player they beat a level
     public void completeLevel() {
@@ -563,7 +624,14 @@ public void hurtPlayer(MapEntity mapEntity) {
             currentAnimationName = "WALK_RIGHT";
 
             super.update();
-            moveXHandleCollision(walkSpeed);
+            float moved = moveXHandleCollision(walkSpeed);
+
+            // if something is blocking the walk-off (like the cave wall), end the level right away
+            if (moved == 0) {
+                for (PlayerListener listener : listeners) {
+                    listener.onLevelCompleted();
+                }
+            }
         }
 
         else {
@@ -597,14 +665,10 @@ public void hurtPlayer(MapEntity mapEntity) {
         }
 
         // player falls off screen after death animation
+        // after the death animation, pause for a moment then show the death screen
         else if (currentFrameIndex == getCurrentAnimation().length - 1) {
-
-            if (map.getCamera().containsDraw(this)) {
-                moveY(3);
-            }
-
-            else {
-
+            deathTimer++;
+            if (deathTimer >= 45) {   // about 3/4 of a second
                 for (PlayerListener listener : listeners) {
                     listener.onDeath();
                 }

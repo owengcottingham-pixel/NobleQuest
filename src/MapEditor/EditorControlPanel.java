@@ -118,11 +118,23 @@ public class EditorControlPanel extends JPanel {
                     fileWriter.write(String.valueOf(mapTiles[j + map.getWidth() * i].getTileIndex()));
                     if (j < map.getWidth() - 1) {
                         fileWriter.write(" ");
-                    } else if (j >= map.getWidth() -1 && i < map.getHeight() - 1) {
+                    } else if (i < map.getHeight() - 1) {
                         fileWriter.write("\n");
                     }
                 }
             }
+
+            // Save enhanced objects placed through the editor after the normal tile grid.
+            for (Level.EnhancedMapTile enhancedMapTile : map.getEditorEnhancedMapTiles()) {
+                if (enhancedMapTile instanceof EnhancedMapTiles.DisappearingPlatform) {
+                    fileWriter.write("\nDISAPPEARING_PLATFORM ");
+                    fileWriter.write(String.valueOf(enhancedMapTile.getX()));
+                    fileWriter.write(" ");
+                    fileWriter.write(String.valueOf(enhancedMapTile.getY()));
+                    fileWriter.write(" 3 0 6 16 4");
+                }
+            }
+
             fileWriter.close();
         } catch (IOException ex) {
             ex.printStackTrace();

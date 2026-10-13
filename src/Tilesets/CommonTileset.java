@@ -6,9 +6,13 @@ import Engine.ImageLoader;
 import GameObject.Frame;
 import GameObject.ImageEffect;
 import GameObject.Rectangle;
+import Level.TileLayout;
 import Level.TileType;
 import Level.Tileset;
 import Utils.SlopeTileLayoutUtils;
+
+import Level.TileLayout;
+import Utils.Direction;
 
 import java.util.ArrayList;
 
@@ -89,7 +93,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder treeTrunkTile = new MapTileBuilder(treeTrunkFrame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(treeTrunkTile);
 
@@ -99,7 +103,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder treeTopLeavesTile = new MapTileBuilder(treeTopLeavesFrame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(treeTopLeavesTile);
 
@@ -198,7 +202,8 @@ public class CommonTileset extends Tileset {
                 
         };
         
-        MapTileBuilder holeWithEyestile = new MapTileBuilder(holeWithEyesFrames);
+        MapTileBuilder holeWithEyestile = new MapTileBuilder(holeWithEyesFrames)
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(holeWithEyestile);
 
@@ -362,17 +367,92 @@ public class CommonTileset extends Tileset {
 
         mapTiles.add(wellTop16Tile);
 
-        //Drip Stone
-        Frame dripStoneFrame = new FrameBuilder(ImageLoader.load("DripStone.png"))
+       
+        // invisible tile
+        Frame invisibleFrame = new FrameBuilder(getSubImage(6, 1))
                 .withScale(tileScale)
                 .build();
 
-        MapTileBuilder dripStoneTile = new MapTileBuilder(dripStoneFrame)
+        MapTileBuilder invisibleTile = new MapTileBuilder(invisibleFrame)
                 .withTileType(TileType.PASSABLE);
 
-        mapTiles.add(dripStoneTile);
+        mapTiles.add(invisibleTile);
+
+        // village house - roof
+        mapTiles.add(roofSlope(7, 0, SlopeTileLayoutUtils.createBottomLeft30SlopeLayout(spriteWidth, (int) tileScale)));
+        mapTiles.add(roofSlope(7, 1, SlopeTileLayoutUtils.createTopLeft30SlopeLayout(spriteWidth, (int) tileScale)));
+        mapTiles.add(houseTile(7, 2, TileType.NOT_PASSABLE));
+        mapTiles.add(houseTile(7, 3, TileType.NOT_PASSABLE));
+        mapTiles.add(roofSlope(7, 4, right30Top()));
+        mapTiles.add(roofSlope(7, 5, right30Bottom()));
+
+        // village house - inside (walk-through)
+        for (int row = 8; row <= 10; row++) {
+            for (int col = 0; col <= 5; col++) {
+                mapTiles.add(houseTile(row, col, TileType.PASSABLE));
+            }
+        }
+
+        // spikes (row 11 = stone, row 12 = grass): floor, ceiling, left wall, right wall
+        int[][] spikeBounds = {
+                {1, 10, 14, 6},  // points up (on a floor)
+                {1, 0, 14, 6},   // points down (on a ceiling)
+                {0, 1, 6, 14},   // points right (on a wall to the left)
+                {10, 1, 6, 14}   // points left (on a wall to the right)
+        };
+        for (int row = 11; row <= 12; row++) {
+            for (int col = 0; col < 4; col++) {
+                int[] b = spikeBounds[col];
+                Frame spikeFrame = new FrameBuilder(getSubImage(row, col))
+                        .withScale(tileScale)
+                        .withBounds(b[0], b[1], b[2], b[3])
+                        .build();
+                mapTiles.add(new MapTileBuilder(spikeFrame).withTileType(TileType.SPIKES));
+            }
+        }
 
         return mapTiles;
     }
+
+        private MapTileBuilder houseTile(int row, int col, TileType type) {
+        Frame frame = new FrameBuilder(getSubImage(row, col)).withScale(tileScale).build();
+        return new MapTileBuilder(frame).withTileType(type);
+    }
+
+    private MapTileBuilder roofSlope(int row, int col, TileLayout layout) {
+        Frame frame = new FrameBuilder(getSubImage(row, col)).withScale(tileScale).build();
+        return new MapTileBuilder(frame).withTileType(TileType.SLOPE).withTileLayout(layout);
+    }
+
+    // the engine only has left 30 degree slopes, so these are mirrored copies for the right side
+    private TileLayout right30Bottom() {
+        int size = spriteWidth * (int) tileScale;
+        int[][] layout = new int[size][size];
+        int colCounter = 0;
+        for (int i = size - 1; i >= size / 2; i--) {
+            for (int j = 0; j < size - colCounter; j++) {
+                layout[i][j] = 1;
+            }
+            colCounter += 2;
+        }
+        return new TileLayout(layout, Direction.RIGHT);
+    }
+
+    private TileLayout right30Top() {
+        int size = spriteWidth * (int) tileScale;
+        int[][] layout = new int[size][size];
+        int colCounter = 0;
+        for (int i = size - 1; i >= 0; i--) {
+            for (int j = 0; j < size - colCounter; j++) {
+                layout[i][j] = 1;
+            }
+            if (i < size / 2) {
+                colCounter += 2;
+            }
+        }
+        return new TileLayout(layout, Direction.RIGHT);
+    }
+
+    
 
 }

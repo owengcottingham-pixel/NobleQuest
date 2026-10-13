@@ -20,7 +20,7 @@ public class Knight extends Player {
         terminalVelocityY = 6f;
         jumpHeight = 14.5f;
         jumpDegrade = .5f;
-        walkSpeed = 2.3f;
+        walkSpeed = 3.5f;
         momentumYIncrease = .5f;
     }
     
