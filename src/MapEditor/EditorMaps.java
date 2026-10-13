@@ -12,6 +12,7 @@ public class EditorMaps {
     public static ArrayList<String> getMapNames() {
         return new ArrayList<String>() {{
             add("TestMap");
+            add("Level2");
             add("TitleScreen");
             add("NewLevel");
         }};
@@ -21,6 +22,8 @@ public class EditorMaps {
         switch(mapName) {
             case "TestMap":
                 return new TestMap();
+            case "Level2":
+                return new Level2();
             case "TitleScreen":
                 return new TitleScreenMap();
             case "NewLevel":

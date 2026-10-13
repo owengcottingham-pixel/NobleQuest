@@ -5,6 +5,7 @@ import Builders.MapTileBuilder;
 import Engine.ImageLoader;
 import GameObject.Frame;
 import GameObject.ImageEffect;
+import GameObject.Rectangle;
 import Level.TileType;
 import Level.Tileset;
 import Utils.SlopeTileLayoutUtils;
@@ -168,7 +169,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder greyRockTile = new MapTileBuilder(greyRockFrame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(greyRockTile);
 
@@ -361,6 +362,15 @@ public class CommonTileset extends Tileset {
 
         mapTiles.add(wellTop16Tile);
 
+        //Drip Stone
+        Frame dripStoneFrame = new FrameBuilder(ImageLoader.load("DripStone.png"))
+                .withScale(tileScale)
+                .build();
+
+        MapTileBuilder dripStoneTile = new MapTileBuilder(dripStoneFrame)
+                .withTileType(TileType.PASSABLE);
+
+        mapTiles.add(dripStoneTile);
 
         return mapTiles;
     }

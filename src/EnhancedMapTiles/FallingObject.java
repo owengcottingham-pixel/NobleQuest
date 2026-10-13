@@ -7,6 +7,7 @@ import GameObject.Rectangle;
 import Level.EnhancedMapTile;
 import Level.MapEntity;
 import Level.MapEntityStatus;
+import Level.MapTile;
 import Level.Player;
 import Level.TileType;
 import Utils.Direction;
@@ -26,11 +27,15 @@ public class FallingObject extends EnhancedMapTile {
 
     private State state = State.WAITING;
 
+    public FallingObject(float x, MapTile mapTile) {
+        this(mapTile.getX(), mapTile.getY());
+    }
+
     public FallingObject(float x, float y) {
         super(
             x,
             y,
-            new FrameBuilder(ImageLoader.load("GoldBox.png"))
+            new FrameBuilder(ImageLoader.load("DripStone.png"))
                 .withBounds(new Rectangle(1, 1, 14, 14))
                 .withScale(3)
                 .build(),
