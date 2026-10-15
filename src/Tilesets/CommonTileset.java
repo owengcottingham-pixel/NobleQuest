@@ -5,6 +5,7 @@ import Builders.MapTileBuilder;
 import Engine.ImageLoader;
 import GameObject.Frame;
 import GameObject.ImageEffect;
+import GameObject.Rectangle;
 import Level.TileLayout;
 import Level.TileType;
 import Level.Tileset;
@@ -172,7 +173,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder greyRockTile = new MapTileBuilder(greyRockFrame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(greyRockTile);
 
@@ -372,7 +373,7 @@ public class CommonTileset extends Tileset {
 
         mapTiles.add(wellTop16Tile);
 
-
+       
         // invisible tile
         Frame invisibleFrame = new FrameBuilder(getSubImage(6, 1))
                 .withScale(tileScale)

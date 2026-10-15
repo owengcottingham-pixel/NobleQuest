@@ -2,6 +2,8 @@ package MapEditor;
 
 import Level.Map;
 import Maps.Level1;
+import Maps.Level2;
+
 import Maps.NewLevel;
 import Maps.TestMap;
 import Maps.TitleScreenMap;
@@ -12,6 +14,7 @@ public class EditorMaps {
     public static ArrayList<String> getMapNames() {
         return new ArrayList<String>() {{
             add("TestMap");
+            add("Level2");
             add("Level1");
             add("TitleScreen");
             add("NewLevel");
@@ -22,6 +25,8 @@ public class EditorMaps {
         switch(mapName) {
             case "TestMap":
                 return new TestMap();
+            case "Level2":
+                return new Level2();
             case "Level1":
                 return new Level1();
             case "TitleScreen":

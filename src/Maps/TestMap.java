@@ -57,8 +57,8 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
     enhancedMapTiles.add(hmp);
 
     FallingObject fallingObject = new FallingObject(
-        getMapTile(6, 5).getX(),
-        getMapTile(6, 5).getY()
+        getMapTile(6, 7).getX(),
+        getMapTile(6, 7).getY()
     );
 
     enhancedMapTiles.add(fallingObject);
