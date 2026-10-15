@@ -209,6 +209,7 @@ public class CommonTileset extends Tileset {
         //well top 1
         Frame wellTop1Frame = new FrameBuilder(getSubImage(3, 3))
                 .withScale(tileScale)
+                .withBounds(7, 8, 9, 8)
                 .build();
 
         MapTileBuilder wellTop1Tile = new MapTileBuilder(wellTop1Frame)
@@ -219,6 +220,7 @@ public class CommonTileset extends Tileset {
         //well top 2
         Frame wellTop2Frame = new FrameBuilder(getSubImage(3, 4))
                 .withScale(tileScale)
+                .withBounds(0, 6, 16, 10)
                 .build();
 
         MapTileBuilder wellTop2Tile = new MapTileBuilder(wellTop2Frame)
@@ -229,6 +231,7 @@ public class CommonTileset extends Tileset {
         //well top 3
         Frame wellTop3Frame = new FrameBuilder(getSubImage(3, 5))
                 .withScale(tileScale)
+                .withBounds(0, 6, 16, 10)
                 .build();
 
         MapTileBuilder wellTop3Tile = new MapTileBuilder(wellTop3Frame)
@@ -239,6 +242,7 @@ public class CommonTileset extends Tileset {
         //well top 4
         Frame wellTop4Frame = new FrameBuilder(getSubImage(4, 0))
                 .withScale(tileScale)
+                .withBounds(0, 8, 10, 8)
                 .build();
 
         MapTileBuilder wellTop4Tile = new MapTileBuilder(wellTop4Frame)
@@ -252,7 +256,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder wellTop5Tile = new MapTileBuilder(wellTop5Frame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(wellTop5Tile);
 
@@ -262,7 +266,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder wellTop6Tile = new MapTileBuilder(wellTop6Frame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(wellTop6Tile);
 
@@ -272,7 +276,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder wellTop7Tile = new MapTileBuilder(wellTop7Frame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(wellTop7Tile);
 
@@ -282,7 +286,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder wellTop8Tile = new MapTileBuilder(wellTop8Frame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(wellTop8Tile);
 
@@ -292,7 +296,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder wellTop9Tile = new MapTileBuilder(wellTop9Frame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(wellTop9Tile);
 
@@ -302,7 +306,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder wellTop10Tile = new MapTileBuilder(wellTop10Frame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(wellTop10Tile);
 
@@ -312,7 +316,7 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder wellTop11Tile = new MapTileBuilder(wellTop11Frame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(wellTop11Tile);
 
@@ -322,13 +326,14 @@ public class CommonTileset extends Tileset {
                 .build();
 
         MapTileBuilder wellTop12Tile = new MapTileBuilder(wellTop12Frame)
-                .withTileType(TileType.NOT_PASSABLE);
+                .withTileType(TileType.PASSABLE);
 
         mapTiles.add(wellTop12Tile);
 
         //well top 13
         Frame wellTop13Frame = new FrameBuilder(getSubImage(5, 3))
                 .withScale(tileScale)
+                .withBounds(11, 0, 5, 16)
                 .build();
 
         MapTileBuilder wellTop13Tile = new MapTileBuilder(wellTop13Frame)
@@ -359,6 +364,7 @@ public class CommonTileset extends Tileset {
         //well top 16
         Frame wellTop16Frame = new FrameBuilder(getSubImage(6, 0))
                 .withScale(tileScale)
+                .withBounds(0, 0, 8, 16)
                 .build();
 
         MapTileBuilder wellTop16Tile = new MapTileBuilder(wellTop16Frame)
@@ -410,12 +416,62 @@ public class CommonTileset extends Tileset {
             }
         }
 
+        // cosmetics stall (tileset rows 13-15, indices 62-79).
+        // All PASSABLE: the player walks into it, same as the house interior.
+        // The roof corners are transparent, so making the roof solid would put
+        // invisible blocks in mid-air either side of the ridge.
+        // Roof: every tile solid, right out to the eave tips.
+        // The roof is an A-frame, so a full-tile box per column would make the open
+        // sky beside each slope solid. Instead each box starts at the row where
+        // that tile is at least half covered in thatch, which tracks the roof line
+        // and costs only 9-15 transparent pixels per tile at the upper outer
+        // corners. It collides as six steps rather than a true slope -- the engine
+        // has TileType.SLOPE for that, but the stall's pitch is about 2.86:1 and
+        // does not match the built-in 30 degree layouts the house roof uses.
+        final int[] ROOF_TOP = { 13, 7, 1, 1, 7, 12 };
+
+        for (int row = 13; row <= 15; row++) {
+            for (int col = 0; col <= 5; col++) {
+                if (row == 13) {
+                    mapTiles.add(stallRoofTile(row, col, ROOF_TOP[col]));
+                } else if (row == 15 && col == 5) {
+                    mapTiles.add(stallCounterTile(row, col));
+                } else {
+                    mapTiles.add(stallTile(row, col));
+                }
+            }
+        }
+
         return mapTiles;
     }
 
         private MapTileBuilder houseTile(int row, int col, TileType type) {
         Frame frame = new FrameBuilder(getSubImage(row, col)).withScale(tileScale).build();
         return new MapTileBuilder(frame).withTileType(type);
+    }
+
+    private MapTileBuilder stallRoofTile(int row, int col, int top) {
+        Frame frame = new FrameBuilder(getSubImage(row, col))
+                .withScale(tileScale)
+                .withBounds(0, top, 16, 16 - top)
+                .build();
+        return new MapTileBuilder(frame).withTileType(TileType.NOT_PASSABLE);
+    }
+
+    // The counter: the one solid piece of the stall. The bounds start 3px down
+    // so only the counter itself blocks -- the top of this cell is back wall, and
+    // making that solid too would put an invisible lip above the counter.
+    private MapTileBuilder stallCounterTile(int row, int col) {
+        Frame frame = new FrameBuilder(getSubImage(row, col))
+                .withScale(tileScale)
+                .withBounds(0, 3, 16, 13)
+                .build();
+        return new MapTileBuilder(frame).withTileType(TileType.NOT_PASSABLE);
+    }
+
+    private MapTileBuilder stallTile(int row, int col) {
+        Frame frame = new FrameBuilder(getSubImage(row, col)).withScale(tileScale).build();
+        return new MapTileBuilder(frame).withTileType(TileType.PASSABLE);
     }
 
     private MapTileBuilder roofSlope(int row, int col, TileLayout layout) {

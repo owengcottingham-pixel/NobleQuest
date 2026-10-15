@@ -1,6 +1,7 @@
 package Screens;
 
 import java.awt.Color;
+import Engine.Config;
 import Engine.GraphicsHandler;
 import Engine.Screen;
 import Game.GameState;
@@ -29,7 +30,14 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     protected boolean levelCompletedStateChangeStart;
     protected NumberDisplay coinDisplay;
     protected BufferedImage coinIcon;
-    private static final int SCREEN_WIDTH = 800;   // match your window
+
+    // coin counter: a fixed 5-slot field pinned to the top right corner.
+    // reads the real window size, so it stays in the corner if the window changes again.
+    private static final int COIN_SLOTS = 5;
+    private static final int HUD_MARGIN = 20;
+    private static final int COIN_ICON_SIZE = 28;
+    private static final int COIN_ICON_GAP = 10;
+    private static final int HUD_TOP = 14;
 
     public PlayLevelScreen(ScreenCoordinator screenCoordinator) {
         this.screenCoordinator = screenCoordinator;
@@ -88,8 +96,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             case RUNNING:
                 map.draw(graphicsHandler);
                 player.draw(graphicsHandler);
-                graphicsHandler.drawImage(coinIcon, SCREEN_WIDTH - 112, 14, 28, 28);
-                coinDisplay.draw(graphicsHandler, player.getCoins(), SCREEN_WIDTH - 78, 12);
+                drawCoinCounter(graphicsHandler);
                 drawDashBar(graphicsHandler);
                 drawHealthBar(graphicsHandler);
                 break;
@@ -106,7 +113,22 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         return playLevelScreenState;
     }
 
-    private void drawDashBar(GraphicsHandler graphicsHandler) 
+    // Coin icon plus a reserved 5-digit field, right edge a fixed margin from the
+    // window edge. The field is reserved up front, so the icon and slot 0 never move
+    // no matter how many digits the count has.
+    private void drawCoinCounter(GraphicsHandler graphicsHandler) {
+        int fieldWidth = coinDisplay.fieldWidth(COIN_SLOTS);
+        int blockWidth = COIN_ICON_SIZE + COIN_ICON_GAP + fieldWidth;
+        int blockX = Config.GAME_WINDOW_WIDTH - HUD_MARGIN - blockWidth;
+
+        graphicsHandler.drawImage(coinIcon, blockX, HUD_TOP, COIN_ICON_SIZE, COIN_ICON_SIZE);
+
+        int digitsX = blockX + COIN_ICON_SIZE + COIN_ICON_GAP;
+        int digitsY = HUD_TOP + (COIN_ICON_SIZE - coinDisplay.slotHeight()) / 2;
+        coinDisplay.drawInSlots(graphicsHandler, player.getCoins(), digitsX, digitsY, COIN_SLOTS);
+    }
+
+    private void drawDashBar(GraphicsHandler graphicsHandler)
     {
         int x = 20;
         int y = 20;
