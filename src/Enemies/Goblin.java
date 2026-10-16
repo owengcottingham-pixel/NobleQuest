@@ -39,7 +39,7 @@ public class Goblin extends Enemy {
     protected float knockbackSpeed = 4f;
     protected Direction knockbackDirection = Direction.LEFT;
     protected Direction startFacingDirection;
-    private Direction facingDirection;
+    protected Direction facingDirection;
     private AirGroundState airGroundState;
     protected int attackRange = 80;          // horizontal px before he commits
     protected int attackHeightRange = 60;    // ignores the knight on a far ledge
@@ -49,6 +49,17 @@ public class Goblin extends Enemy {
     protected int attackTimer = 0;
     protected int attackCooldownTimer = 0;
    
+
+    protected boolean isFlying() {
+        return false;
+    }
+
+    protected boolean updateSpecialAttack(Player player) {
+        return false;
+    }
+
+    protected void updateSpecialAttackAnimation() {
+    }
 
     public Goblin(Point location, Direction facingDirection) {
         this(location, facingDirection, new SpriteSheet(ImageLoader.load("Goblin.png"), 104, 80));
@@ -118,7 +129,9 @@ public class Goblin extends Enemy {
         float moveAmountX = 0;
         float moveAmountY = 0;
 
-        moveAmountY += gravity + momentumY;
+        if (!isFlying()) {
+            moveAmountY += gravity + momentumY;
+        }
 
         if (hurtTimer > 0) {
             hurtTimer--;
@@ -130,9 +143,11 @@ public class Goblin extends Enemy {
             attackCooldownTimer--;
         }
 
-        if (attackTimer == 0 && attackCooldownTimer == 0
+        boolean specialAttackActive = updateSpecialAttack(player);
+
+        if (!specialAttackActive && attackTimer == 0 && attackCooldownTimer == 0
                 && hurtTimer == 0 && knockbackTimer == 0
-                && airGroundState == AirGroundState.GROUND
+                && (isFlying() || airGroundState == AirGroundState.GROUND)
                 && isPlayerInRange(player)) {
             facingDirection = (player.getX() > getX()) ? Direction.RIGHT : Direction.LEFT;
             attackTimer = windupFrames + strikeFrames;
@@ -151,21 +166,25 @@ public class Goblin extends Enemy {
             if (attackTimer == 0) {
                 attackCooldownTimer = attackCooldown;
             }
-        } else if (airGroundState == AirGroundState.GROUND) {
+        } else if (!specialAttackActive && (isFlying() || airGroundState == AirGroundState.GROUND)) {
             moveAmountX += facingDirection == Direction.RIGHT ? movementSpeed : -movementSpeed;
         }
 
-        moveYHandleCollision(moveAmountY);
+        if (!isFlying()) {
+            moveYHandleCollision(moveAmountY);
+        }
 
         // build up fall speed while airborne so it drops at a believable rate
-        if (airGroundState == AirGroundState.AIR) {
+        if (!isFlying() && airGroundState == AirGroundState.AIR) {
             momentumY = Math.min(momentumY + momentumYIncrease, terminalVelocityY);
         }
 
         moveXHandleCollision(moveAmountX);
 
         boolean right = facingDirection == Direction.RIGHT;
-        if (hurtTimer > 0) {
+        if (specialAttackActive) {
+            updateSpecialAttackAnimation();
+        } else if (hurtTimer > 0) {
             currentAnimationName = right ? "HURT_RIGHT" : "HURT_LEFT";
         } else if (attackTimer > strikeFrames) {
             currentAnimationName = right ? "WINDUP_RIGHT" : "WINDUP_LEFT";

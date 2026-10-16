@@ -48,6 +48,30 @@ public class MapTile extends MapEntity {
         return tileIndex;
     }
 
+    public boolean isSolidPixelAt(float worldX, float worldY) {
+        if (tileType != TileType.PILLAR) {
+            return tileType == TileType.NOT_PASSABLE;
+        }
+
+        float tileWidth = getWidth();
+        float tileHeight = getHeight();
+        if (worldX < getX() || worldX >= getX() + tileWidth
+                || worldY < getY() || worldY >= getY() + tileHeight) {
+            return false;
+        }
+
+        Frame frame = getCurrentFrame();
+        int imageX = Math.min((int) ((worldX - getX()) / frame.getScale()), frame.getImage().getWidth() - 1);
+        int imageY = Math.min((int) ((worldY - getY()) / frame.getScale()), frame.getImage().getHeight() - 1);
+        int pixel = frame.getImage().getRGB(imageX, imageY);
+        int alpha = (pixel >>> 24) & 0xff;
+        int red = (pixel >>> 16) & 0xff;
+        int green = (pixel >>> 8) & 0xff;
+        int blue = pixel & 0xff;
+
+        return alpha > 0 && red > green + 5 && green > blue + 5;
+    }
+
     // determines if tile is animated or not
     public boolean isAnimated() {
         return getCurrentAnimation().length > 1;

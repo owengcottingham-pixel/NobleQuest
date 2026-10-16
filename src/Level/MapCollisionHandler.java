@@ -1,6 +1,7 @@
 package Level;
 
 import GameObject.GameObject;
+import GameObject.Rectangle;
 import Utils.Direction;
 import Utils.Point;
 
@@ -16,21 +17,38 @@ public class MapCollisionHandler {
         float edgeBoundX = direction == Direction.LEFT ? gameObject.getBounds().getX1() : gameObject.getBounds().getX2();
         Point tileIndex = map.getTileIndexByPosition(edgeBoundX, gameObject.getBounds().getY1());
         MapTile entityCollidedWith = null;
+        int xStep = direction == Direction.LEFT ? -1 : 1;
+        int xOffset = direction == Direction.LEFT ? 1 : -1;
         for (int i = -1; i <= numberOfTilesToCheck + 1; i++) {
-            MapTile mapTile = map.getMapTile(Math.round(tileIndex.x), Math.round(tileIndex.y + i));
-            if (mapTile != null && hasCollidedWithMapEntity(gameObject, mapTile, direction)) {
-                entityCollidedWith = mapTile;
-                float adjustedPositionX = gameObject.getX();
-                if (direction == Direction.RIGHT) {
-                    float boundsDifference = gameObject.getX2() - gameObject.getBounds().getX2();
-                    adjustedPositionX = mapTile.getBounds().getX1() - gameObject.getWidth() + boundsDifference;
-                } else if (direction == Direction.LEFT) {
-                    float boundsDifference = gameObject.getBounds().getX1() - gameObject.getX();
-                    adjustedPositionX = (mapTile.getBounds().getX2() + 1) - boundsDifference;
+            for (int j = 0; j <= 2; j++) {
+                MapTile mapTile = map.getMapTile(Math.round(tileIndex.x) + xOffset, Math.round(tileIndex.y + i));
+                xOffset += xStep;
+                if (mapTile != null && hasCollidedWithMapEntity(gameObject, mapTile, direction)) {
+                    entityCollidedWith = mapTile;
+                    float adjustedPositionX = gameObject.getX();
+                    if (direction == Direction.RIGHT) {
+                        if (mapTile.getTileType() == TileType.PILLAR) {
+                            float boundsOffset = gameObject.getBounds().getX1() - gameObject.getX();
+                            float solidEdge = getPillarCollisionEdge(gameObject, mapTile, direction);
+                            adjustedPositionX = solidEdge - boundsOffset - gameObject.getBounds().getWidth();
+                        } else {
+                            float boundsDifference = gameObject.getX2() - gameObject.getBounds().getX2();
+                            adjustedPositionX = mapTile.getBounds().getX1() - gameObject.getWidth() + boundsDifference;
+                        }
+                    } else if (direction == Direction.LEFT) {
+                        if (mapTile.getTileType() == TileType.PILLAR) {
+                            float boundsOffset = gameObject.getBounds().getX1() - gameObject.getX();
+                            float solidEdge = getPillarCollisionEdge(gameObject, mapTile, direction);
+                            adjustedPositionX = solidEdge + 1 - boundsOffset;
+                        } else {
+                            float boundsDifference = gameObject.getBounds().getX1() - gameObject.getX();
+                            adjustedPositionX = (mapTile.getBounds().getX2() + 1) - boundsDifference;
+                        }
+                    }
+                    return new MapCollisionCheckResult(new Point(adjustedPositionX, gameObject.getY()), entityCollidedWith);
                 }
-                return new MapCollisionCheckResult(new Point(adjustedPositionX, gameObject.getY()), entityCollidedWith);
-
             }
+            xOffset = direction == Direction.LEFT ? 1 : -1;
         }
 
         // check active enhanced map tiles for potential collision
@@ -67,11 +85,23 @@ public class MapCollisionHandler {
                 entityCollidedWith = mapTile;
                 float adjustedPositionY = gameObject.getY();
                 if (direction == Direction.DOWN) {
-                    float boundsDifference = gameObject.getY2() - gameObject.getBounds().getY2();
-                    adjustedPositionY = mapTile.getBounds().getY1() - gameObject.getHeight() + boundsDifference;
+                    if (mapTile.getTileType() == TileType.PILLAR) {
+                        float boundsOffset = gameObject.getBounds().getY1() - gameObject.getY();
+                        float solidEdge = getPillarCollisionEdge(gameObject, mapTile, direction);
+                        adjustedPositionY = solidEdge - boundsOffset - gameObject.getBounds().getHeight();
+                    } else {
+                        float boundsDifference = gameObject.getY2() - gameObject.getBounds().getY2();
+                        adjustedPositionY = mapTile.getBounds().getY1() - gameObject.getHeight() + boundsDifference;
+                    }
                 } else if (direction == Direction.UP) {
-                    float boundsDifference = gameObject.getBounds().getY1() - gameObject.getY();
-                    adjustedPositionY = (mapTile.getBounds().getY2() + 1) - boundsDifference;
+                    if (mapTile.getTileType() == TileType.PILLAR) {
+                        float boundsOffset = gameObject.getBounds().getY1() - gameObject.getY();
+                        float solidEdge = getPillarCollisionEdge(gameObject, mapTile, direction);
+                        adjustedPositionY = solidEdge + 1 - boundsOffset;
+                    } else {
+                        float boundsDifference = gameObject.getBounds().getY1() - gameObject.getY();
+                        adjustedPositionY = (mapTile.getBounds().getY2() + 1) - boundsDifference;
+                    }
                 }
                 return new MapCollisionCheckResult(new Point(gameObject.getX(), adjustedPositionY), entityCollidedWith);
             }
@@ -108,6 +138,8 @@ public class MapCollisionHandler {
                     return false;
                 case NOT_PASSABLE:
                     return gameObject.intersects(mapTile);
+                case PILLAR:
+                    return hasPillarPixelCollision(gameObject, mapTile);
                 case JUMP_THROUGH_PLATFORM:
                     return direction == Direction.DOWN && gameObject.intersects(mapTile) &&
                             Math.round(gameObject.getBounds().getY2()) == Math.round(mapTile.getBounds().getY1());
@@ -125,6 +157,78 @@ public class MapCollisionHandler {
         else {
             return mapEntity.intersects(gameObject);
         }
+    }
+
+    private static boolean hasPillarPixelCollision(GameObject gameObject, MapTile mapTile) {
+        Rectangle bounds = gameObject.getBounds();
+        int left = Math.max((int) Math.ceil(bounds.getX1()), (int) Math.ceil(mapTile.getX()));
+        int right = Math.min((int) Math.floor(bounds.getX2()), (int) Math.floor(mapTile.getX() + mapTile.getWidth() - 1));
+        int top = Math.max((int) Math.ceil(bounds.getY1()), (int) Math.ceil(mapTile.getY()));
+        int bottom = Math.min((int) Math.floor(bounds.getY2()), (int) Math.floor(mapTile.getY() + mapTile.getHeight() - 1));
+
+        for (int y = top; y <= bottom; y++) {
+            for (int x = left; x <= right; x++) {
+                if (mapTile.isSolidPixelAt(x, y)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static float getPillarCollisionEdge(GameObject gameObject, MapTile mapTile, Direction direction) {
+        Rectangle bounds = gameObject.getBounds();
+        int overlapLeft = Math.max((int) Math.ceil(bounds.getX1()), (int) Math.ceil(mapTile.getX()));
+        int overlapRight = Math.min((int) Math.floor(bounds.getX2()), (int) Math.floor(mapTile.getX() + mapTile.getWidth() - 1));
+        int overlapTop = Math.max((int) Math.ceil(bounds.getY1()), (int) Math.ceil(mapTile.getY()));
+        int overlapBottom = Math.min((int) Math.floor(bounds.getY2()), (int) Math.floor(mapTile.getY() + mapTile.getHeight() - 1));
+        int left = direction == Direction.LEFT || direction == Direction.RIGHT
+                ? (int) Math.ceil(mapTile.getX())
+                : overlapLeft;
+        int right = direction == Direction.LEFT || direction == Direction.RIGHT
+                ? (int) Math.floor(mapTile.getX() + mapTile.getWidth() - 1)
+                : overlapRight;
+        int top = direction == Direction.UP || direction == Direction.DOWN
+                ? (int) Math.ceil(mapTile.getY())
+                : overlapTop;
+        int bottom = direction == Direction.UP || direction == Direction.DOWN
+                ? (int) Math.floor(mapTile.getY() + mapTile.getHeight() - 1)
+                : overlapBottom;
+
+        if (direction == Direction.RIGHT) {
+            for (int x = left; x <= right; x++) {
+                for (int y = top; y <= bottom; y++) {
+                    if (mapTile.isSolidPixelAt(x, y)) {
+                        return x;
+                    }
+                }
+            }
+        } else if (direction == Direction.LEFT) {
+            for (int x = right; x >= left; x--) {
+                for (int y = top; y <= bottom; y++) {
+                    if (mapTile.isSolidPixelAt(x, y)) {
+                        return x;
+                    }
+                }
+            }
+        } else if (direction == Direction.DOWN) {
+            for (int y = top; y <= bottom; y++) {
+                for (int x = left; x <= right; x++) {
+                    if (mapTile.isSolidPixelAt(x, y)) {
+                        return y;
+                    }
+                }
+            }
+        } else if (direction == Direction.UP) {
+            for (int y = bottom; y >= top; y--) {
+                for (int x = left; x <= right; x++) {
+                    if (mapTile.isSolidPixelAt(x, y)) {
+                        return y;
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
     // special collision logic handling for detecting collision with slopes in the y direction
