@@ -38,9 +38,12 @@ public abstract class Player extends GameObject {
     protected float momentumY = 0;
     protected float moveAmountX, moveAmountY;
     protected float lastAmountMovedX, lastAmountMovedY;
-    protected float dashSpeed = 7f;   // walkSpeed is usually ~2.3f, so this is a big jump
-    protected int dashDuration = 17;   // frames the dash lasts (~1/6 sec at 60fps)
-    protected int dashCooldown = 120;
+    protected float dashSpeed = 9f;   // walkSpeed is usually ~2.3f, so this is a big jump
+    protected int dashDuration = 14;   // frames the dash lasts (~1/6 sec at 60fps)
+    protected int dashCooldown = 30;
+    protected float dashDirX = 0;
+    protected float dashDirY = 0;
+    protected boolean airDashUsed = false;
     protected java.util.ArrayList<Float> dashTrailX = new java.util.ArrayList<>();
     protected java.util.ArrayList<Float> dashTrailY = new java.util.ArrayList<>();
     protected int dashTrailLength = 5;
@@ -70,7 +73,7 @@ public abstract class Player extends GameObject {
     protected Key MOVE_RIGHT_KEY = Key.D;
     protected Key CROUCH_KEY = Key.S;
 
-    protected Key DASH_KEY = Key.SPACE;
+    protected Key DASH_KEY = Key.SHIFT;
 
     protected Key ATTACK_KEY = Key.J;
 
@@ -164,10 +167,35 @@ public abstract class Player extends GameObject {
                 dashCooldownTimer--;
             }
 
-            if (Keyboard.isKeyDown(DASH_KEY) && !keyLocker.isKeyLocked(DASH_KEY)
-            && playerState != PlayerState.DASHING && dashCooldownTimer == 0) {
+            if (Keyboard.isKeyDown(DASH_KEY) && !keyLocker.isKeyLocked(DASH_KEY) && playerState != PlayerState.DASHING && dashCooldownTimer == 0 && !(airGroundState == AirGroundState.AIR && airDashUsed)) {
                 keyLocker.lockKey(DASH_KEY);
+
+                float dx = 0, dy = 0;
+                if (Keyboard.isKeyDown(MOVE_LEFT_KEY)) dx -= 1;
+                if (Keyboard.isKeyDown(MOVE_RIGHT_KEY)) dx += 1;
+                if (Keyboard.isKeyDown(JUMP_KEY)) dy -= 1;
+                if (Keyboard.isKeyDown(CROUCH_KEY)) dy += 1;
+
+                if (airGroundState == AirGroundState.GROUND && dy > 0) dy = 0;
+
+                if (dx == 0 && dy == 0) dx = (facingDirection == Direction.RIGHT) ? 1 : -1;
+
+                if (dx != 0 && dy != 0) {
+                    dx *= 0.707f;
+                    dy *= 0.707f;
+                }
+
+                dashDirX = dx;
+                dashDirY = dy;
+
+                if (dx > 0) facingDirection = Direction.RIGHT;
+                else if (dx < 0) facingDirection = Direction.LEFT;
                 dashDirection = facingDirection;
+
+                if (dy < 0) keyLocker.lockKey(JUMP_KEY);
+
+                if (airGroundState == AirGroundState.AIR) airDashUsed = true;
+
                 dashTimer = dashDuration;
                 playerState = PlayerState.DASHING;
             }
@@ -314,12 +342,16 @@ public abstract class Player extends GameObject {
     {
         currentAnimationName = dashDirection == Direction.RIGHT ? "DASH_RIGHT" : "DASH_LEFT";
 
-        // cancel gravity so the dash travels in a straight horizontal line
-        
+        // no gravity during the dash
         momentumY = 0;
         jumpForce = 0;
 
-        moveAmountX = dashDirection == Direction.RIGHT ? dashSpeed : -dashSpeed;
+        // starts fast, slows down toward the end (this is what makes it feel punchy)
+        float progress = dashTimer / (float) dashDuration;   // goes from 1 down to 0
+        float speed = dashSpeed * (0.4f + 0.9f * progress);
+
+        moveAmountX = dashDirX * speed;
+        moveAmountY = dashDirY * speed;
 
         dashTrailX.add(getX());
         dashTrailY.add(getY());
@@ -331,10 +363,14 @@ public abstract class Player extends GameObject {
         dashTimer--;
 
         if (dashTimer <= 0) {
-
             dashTrailX.clear();
             dashTrailY.clear();
             dashCooldownTimer = dashCooldown;
+
+            // after an up-dash, keep rising a little instead of stopping dead
+            if (dashDirY < 0) {
+                jumpForce = 3f;
+            }
 
             playerState = airGroundState == AirGroundState.GROUND
                 ? PlayerState.STANDING
@@ -565,6 +601,7 @@ public abstract class Player extends GameObject {
             if (hasCollided) {
                 if (airGroundState == AirGroundState.AIR) {
                 dashCooldownTimer = 0; // just landed, dash is ready again
+                airDashUsed = false;
                 }
                 momentumY = 0;
                 airGroundState = AirGroundState.GROUND;
