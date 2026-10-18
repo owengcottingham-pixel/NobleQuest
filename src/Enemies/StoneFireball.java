@@ -15,7 +15,7 @@ import java.util.HashMap;
 
 public class StoneFireball extends Enemy {
     private static final float MOVEMENT_SPEED = 6f;
-    private static final float SPRITE_SCALE = 0.12f;
+    static final float SPRITE_SCALE = 0.18f;
 
     private final Direction direction;
     private final float maxDistance;

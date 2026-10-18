@@ -175,6 +175,13 @@ public abstract class Map {
                 );
                 disappearingPlatform.setMap(this);
                 editorEnhancedMapTiles.add(disappearingPlatform);
+            } else if (objectType.equals("COIN")) {
+                float x = fileInput.nextFloat();
+                float y = fileInput.nextFloat();
+
+                EnhancedMapTile coin = new EnhancedMapTiles.Coin(x, y);
+                coin.setMap(this);
+                editorEnhancedMapTiles.add(coin);
             } else {
                 // Ignore unknown editor objects so future editor additions remain backwards compatible.
                 break;

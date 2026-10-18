@@ -38,6 +38,7 @@ public abstract class Player extends GameObject {
     protected float momentumY = 0;
     protected float moveAmountX, moveAmountY;
     protected float lastAmountMovedX, lastAmountMovedY;
+    protected float lastFrameMovedX;
     protected float dashSpeed = 7f;   // walkSpeed is usually ~2.3f, so this is a big jump
     protected int dashDuration = 17;   // frames the dash lasts (~1/6 sec at 60fps)
     protected int dashCooldown = 120;
@@ -197,7 +198,9 @@ public abstract class Player extends GameObject {
                 }
             }
 
+            float xBeforeMovement = getX();
             lastAmountMovedX = super.moveXHandleCollision(velocityX);
+            lastFrameMovedX = getX() - xBeforeMovement;
             
             lastAmountMovedY = super.moveYHandleCollision(moveAmountY);
 
@@ -469,39 +472,16 @@ public abstract class Player extends GameObject {
     // anything extra the player should do based on interactions can be handled here
     protected void handlePlayerAnimation() {
         if (playerState == PlayerState.STANDING) {
-
-            this.currentAnimationName =
-                facingDirection == Direction.RIGHT
-                ? "STAND_RIGHT"
-                : "STAND_LEFT";
-
-            int centerX =
-                Math.round(getBounds().getX1()) +
-                Math.round(getBounds().getWidth() / 2f);
-
-            int centerY =
-                Math.round(getBounds().getY1()) +
-                Math.round(getBounds().getHeight() / 2f);
-
-            MapTile currentMapTile =
-                map.getTileByPosition(centerX, centerY);
-
-            if (currentMapTile != null &&
-                currentMapTile.getTileType() == TileType.WATER) {
-
-                this.currentAnimationName =
-                    facingDirection == Direction.RIGHT
-                    ? "SWIM_STAND_RIGHT"
-                    : "SWIM_STAND_LEFT";
-            }
+            this.currentAnimationName = getStandingAnimationName();
         }
 
         else if (playerState == PlayerState.WALKING) {
 
+            boolean hasMovementInput = Keyboard.isKeyDown(MOVE_LEFT_KEY) || Keyboard.isKeyDown(MOVE_RIGHT_KEY);
             this.currentAnimationName =
-                facingDirection == Direction.RIGHT
-                ? "WALK_RIGHT"
-                : "WALK_LEFT";
+                hasMovementInput && lastFrameMovedX != 0
+                ? (facingDirection == Direction.RIGHT ? "WALK_RIGHT" : "WALK_LEFT")
+                : getStandingAnimationName();
         }
 
         else if (playerState == PlayerState.CROUCHING) {
@@ -542,6 +522,18 @@ public abstract class Player extends GameObject {
         else if (playerState == PlayerState.DASHING) {
             this.currentAnimationName = dashDirection == Direction.RIGHT ? "DASH_RIGHT" : "DASH_LEFT";
         }
+    }
+
+    private String getStandingAnimationName() {
+        String animationName = facingDirection == Direction.RIGHT ? "STAND_RIGHT" : "STAND_LEFT";
+        int centerX = Math.round(getBounds().getX1()) + Math.round(getBounds().getWidth() / 2f);
+        int centerY = Math.round(getBounds().getY1()) + Math.round(getBounds().getHeight() / 2f);
+        MapTile currentMapTile = map.getTileByPosition(centerX, centerY);
+
+        if (currentMapTile != null && currentMapTile.getTileType() == TileType.WATER) {
+            return facingDirection == Direction.RIGHT ? "SWIM_STAND_RIGHT" : "SWIM_STAND_LEFT";
+        }
+        return animationName;
     }
 
     @Override

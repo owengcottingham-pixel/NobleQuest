@@ -59,33 +59,22 @@ public class HorizontalMovingPlatform extends EnhancedMapTile {
 
     @Override
     public void update(Player player) {
-        float startBound = startLocation.x;
-        float endBound = endLocation.x;
+        float leftBound = Math.min(startLocation.x, endLocation.x);
+        float rightBound = Math.max(startLocation.x, endLocation.x);
 
         // move platform left or right based on its current direction
-        int moveAmountX = 0;
-        if (direction == Direction.RIGHT) {
-            moveAmountX += movementSpeed;
-        } else if (direction == Direction.LEFT) {
-            moveAmountX -= movementSpeed;
-        }
+        float moveAmountX = direction == Direction.RIGHT ? movementSpeed : -movementSpeed;
+        float nextX = getX1() + moveAmountX;
 
-        moveX(moveAmountX);
-
-        // if platform reaches the start or end location, it turns around
-        // platform may end up going a bit past the start or end location depending on movement speed
-        // this calculates the difference and pushes the platform back a bit so it ends up right on the start or end location
-        if (getX1() + getWidth() >= endBound) {
-            float difference = endBound - (getX1() + getWidth());
-            moveX(-difference);
-            moveAmountX -= difference;
+        // Treat both locations as the platform's left edge, regardless of their order.
+        if (direction == Direction.RIGHT && nextX >= rightBound) {
+            moveAmountX = rightBound - getX1();
             direction = Direction.LEFT;
-        } else if (getX1() <= startBound) {
-            float difference = startBound - getX1();
-            moveX(difference);
-            moveAmountX += difference;
+        } else if (direction == Direction.LEFT && nextX <= leftBound) {
+            moveAmountX = leftBound - getX1();
             direction = Direction.RIGHT;
         }
+        moveX(moveAmountX);
 
         // if tile type is NOT PASSABLE, if the platform is moving and hits into the player (x axis), it will push the player
         if (tileType == TileType.NOT_PASSABLE) {

@@ -55,7 +55,7 @@ public class StoneEnemy extends Goblin {
         return false;
     }
 
-    private boolean playerIsInFrontWithinRange(Player player) {
+    protected boolean playerIsInFrontWithinRange(Player player) {
         float enemyCenterX = getX() + getWidth() / 2f;
         float playerCenterX = player.getX() + player.getWidth() / 2f;
         float distance = playerCenterX - enemyCenterX;
@@ -69,9 +69,9 @@ public class StoneEnemy extends Goblin {
                 : distance < 0 && distance >= -range);
     }
 
-    private void launchFireball() {
-        float fireballWidth = 171 * 0.12f;
-        float fireballHeight = 176 * 0.12f;
+    protected void launchFireball() {
+        float fireballWidth = 171 * StoneFireball.SPRITE_SCALE;
+        float fireballHeight = 176 * StoneFireball.SPRITE_SCALE;
         float handCenterX = facingDirection == Direction.RIGHT
                 ? getX() + getWidth() - 11
                 : getX() + 11;

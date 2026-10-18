@@ -7,21 +7,27 @@ import Engine.ImageLoader;
 import EnhancedMapTiles.EndLevelBox;
 import EnhancedMapTiles.HorizontalMovingPlatform;
 import EnhancedMapTiles.VerticalMovingPlatform;
+import EnhancedMapTiles.WishingWell;
 import EnhancedMapTiles.DisappearingPlatform;
 import EnhancedMapTiles.BouncyPlatform;
 import EnhancedMapTiles.SuperBouncyPlatform;
 import GameObject.Rectangle;
 import Level.*;
+import NPCs.DwarfShopkeeper;
 import NPCs.Walrus;
 import Tilesets.CommonTileset;
 import Utils.Direction;
+import Utils.Point;
 import EnhancedMapTiles.FallingObject;
 import EnhancedMapTiles.AmbushTrigger;
 import EnhancedMapTiles.Gate;
 import EnhancedMapTiles.CaveEntrance;
+import EnhancedMapTiles.WishingWell;
 
 
 import java.util.ArrayList;
+
+
 
 // Represents a test map to be used in a level
 public class Level1 extends Map {
@@ -29,6 +35,9 @@ public class Level1 extends Map {
     public Level1() {
         super("level1_map.txt", new CommonTileset());
         this.playerStartPosition = getMapTile(3, 71).getLocation();
+
+        //this.playerStartPosition = getMapTile(175, 25).getLocation();
+
         //this.playerStartPosition = getMapTile(200, 45).getLocation();
         //this.playerStartPosition = getMapTile(255, 23).getLocation();
 
@@ -85,6 +94,8 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
     );
     vmp2.setStartOffset(6);
     enhancedMapTiles.add(vmp2);
+
+    enhancedMapTiles.add(new WishingWell(getMapTile(29, 68).getLocation()));
 
     VerticalMovingPlatform vmp3 = new VerticalMovingPlatform(
         ImageLoader.load("GreenPlatform.png"),
@@ -433,6 +444,17 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
 
         Walrus walrus = new Walrus(getMapTile(12, 71).getLocation().subtractY(13));
         npcs.add(walrus);
+
+        // cosmetics stall shopkeeper. The stall is cols 182-187, rows 43-45, and
+        // the ground it rests on is row 46. 46 is the gap from the top of his
+        // 48px cell down to the sole of his boots, so this stands him on it.
+        float stallX = getMapTile(182, 43).getX();
+        float stallGroundY = getMapTile(182, 46).getY();
+        DwarfShopkeeper dwarf = new DwarfShopkeeper(
+                new Point(stallX + 60, stallGroundY - 46),
+                stallX + 24,        // just inside the left post
+                stallX + 205);      // his greeting spot, just clear of the solid counter
+        npcs.add(dwarf);
 
         return npcs;
     }

@@ -61,6 +61,10 @@ public class Goblin extends Enemy {
     protected void updateSpecialAttackAnimation() {
     }
 
+    protected boolean shouldFacePlayerForMelee() {
+        return true;
+    }
+
     public Goblin(Point location, Direction facingDirection) {
         this(location, facingDirection, new SpriteSheet(ImageLoader.load("Goblin.png"), 104, 80));
     }
@@ -148,6 +152,7 @@ public class Goblin extends Enemy {
         if (!specialAttackActive && attackTimer == 0 && attackCooldownTimer == 0
                 && hurtTimer == 0 && knockbackTimer == 0
                 && (isFlying() || airGroundState == AirGroundState.GROUND)
+                && shouldFacePlayerForMelee()
                 && isPlayerInRange(player)) {
             facingDirection = (player.getX() > getX()) ? Direction.RIGHT : Direction.LEFT;
             attackTimer = windupFrames + strikeFrames;
