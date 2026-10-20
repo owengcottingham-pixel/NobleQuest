@@ -140,7 +140,7 @@ public class Goblin extends Enemy {
         if (hurtTimer > 0) {
             hurtTimer--;
         }
-        if (player.getPlayerState() == Player.PlayerState.ATTACKING && hurtTimer == 0 && isInSwordRange(player)) {
+        if (player.isAttacking() && hurtTimer == 0 && isInSwordRange(player)) {
             takeHit(player);
         }
         if (attackCooldownTimer > 0) {
