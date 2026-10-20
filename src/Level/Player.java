@@ -35,9 +35,12 @@ public abstract class Player extends GameObject {
 
     // values used to handle player movement
     protected float jumpForce = 0;
+    protected boolean jumpHeld = false;       // true while the player is still holding jump from the ground
+    protected float jumpCutMultiplier = 0.4f; // how much upward force is kept when jump is let go early
     protected float momentumY = 0;
     protected float moveAmountX, moveAmountY;
     protected float lastAmountMovedX, lastAmountMovedY;
+    protected float lastFrameMovedX;
     protected float dashSpeed = 9f;   // walkSpeed is usually ~2.3f, so this is a big jump
     protected int dashDuration = 14;   // frames the dash lasts (~1/6 sec at 60fps)
     protected int dashCooldown = 30;
@@ -144,7 +147,7 @@ public abstract class Player extends GameObject {
     }
 
     public boolean isAttacking() {
-        return currentAnimationName.startsWith("ATTACK");
+    return attackTimer > 0;
     }
 
     public float getLastAmountMovedY() {
@@ -167,8 +170,19 @@ public abstract class Player extends GameObject {
                 dashCooldownTimer--;
             }
 
+            // attacking now works on top of any movement (walking, jumping, falling)
+            if (attackTimer > 0) {
+                attackTimer--;
+            }
+            if (canAttack() && Keyboard.isKeyDown(ATTACK_KEY) && !keyLocker.isKeyLocked(ATTACK_KEY) && attackTimer == 0 && playerState != PlayerState.DASHING) {
+                startAttack();
+            }
+
             if (Keyboard.isKeyDown(DASH_KEY) && !keyLocker.isKeyLocked(DASH_KEY) && playerState != PlayerState.DASHING && dashCooldownTimer == 0 && !(airGroundState == AirGroundState.AIR && airDashUsed)) {
                 keyLocker.lockKey(DASH_KEY);
+
+                attackTimer = 0; // dashing cancels an attack
+                jumpHeld = false;
 
                 float dx = 0, dy = 0;
                 if (Keyboard.isKeyDown(MOVE_LEFT_KEY)) dx -= 1;
@@ -225,7 +239,9 @@ public abstract class Player extends GameObject {
                 }
             }
 
+            float xBeforeMovement = getX();
             lastAmountMovedX = super.moveXHandleCollision(velocityX);
+            lastFrameMovedX = getX() - xBeforeMovement;
             
             lastAmountMovedY = super.moveYHandleCollision(moveAmountY);
 
@@ -381,7 +397,7 @@ public abstract class Player extends GameObject {
     protected void startAttack() {
         keyLocker.lockKey(ATTACK_KEY);
         attackTimer = 12;
-        playerState = PlayerState.ATTACKING;
+        
     }
 
     protected void playerAttacking() {
@@ -429,7 +445,7 @@ public abstract class Player extends GameObject {
 
             airGroundState = AirGroundState.AIR;
             jumpForce = jumpHeight;
-
+            jumpHeld = true;
             if (jumpForce > 0) {
                 moveAmountY -= jumpForce;
                 jumpForce -= jumpDegrade;
@@ -441,6 +457,13 @@ public abstract class Player extends GameObject {
         }
 
         else if (airGroundState == AirGroundState.AIR) {
+
+            if (jumpHeld && Keyboard.isKeyUp(JUMP_KEY)) {
+                jumpHeld = false;
+                if (jumpForce > 0) {
+                    jumpForce = jumpForce * jumpCutMultiplier;
+                }
+            }
 
             if (jumpForce > 0) {
                 moveAmountY -= jumpForce;
@@ -475,6 +498,7 @@ public abstract class Player extends GameObject {
 
     public void bounce(float force) {
         jumpForce = force;
+        jumpHeld = false;
         momentumY = 0;
         airGroundState = AirGroundState.AIR;
         playerState = PlayerState.JUMPING;
@@ -505,39 +529,16 @@ public abstract class Player extends GameObject {
     // anything extra the player should do based on interactions can be handled here
     protected void handlePlayerAnimation() {
         if (playerState == PlayerState.STANDING) {
-
-            this.currentAnimationName =
-                facingDirection == Direction.RIGHT
-                ? "STAND_RIGHT"
-                : "STAND_LEFT";
-
-            int centerX =
-                Math.round(getBounds().getX1()) +
-                Math.round(getBounds().getWidth() / 2f);
-
-            int centerY =
-                Math.round(getBounds().getY1()) +
-                Math.round(getBounds().getHeight() / 2f);
-
-            MapTile currentMapTile =
-                map.getTileByPosition(centerX, centerY);
-
-            if (currentMapTile != null &&
-                currentMapTile.getTileType() == TileType.WATER) {
-
-                this.currentAnimationName =
-                    facingDirection == Direction.RIGHT
-                    ? "SWIM_STAND_RIGHT"
-                    : "SWIM_STAND_LEFT";
-            }
+            this.currentAnimationName = getStandingAnimationName();
         }
 
         else if (playerState == PlayerState.WALKING) {
 
+            boolean hasMovementInput = Keyboard.isKeyDown(MOVE_LEFT_KEY) || Keyboard.isKeyDown(MOVE_RIGHT_KEY);
             this.currentAnimationName =
-                facingDirection == Direction.RIGHT
-                ? "WALK_RIGHT"
-                : "WALK_LEFT";
+                hasMovementInput && lastFrameMovedX != 0
+                ? (facingDirection == Direction.RIGHT ? "WALK_RIGHT" : "WALK_LEFT")
+                : getStandingAnimationName();
         }
 
         else if (playerState == PlayerState.CROUCHING) {
@@ -578,6 +579,28 @@ public abstract class Player extends GameObject {
         else if (playerState == PlayerState.DASHING) {
             this.currentAnimationName = dashDirection == Direction.RIGHT ? "DASH_RIGHT" : "DASH_LEFT";
         }
+
+        // show the attack animation over whatever the player is doing
+        if (attackTimer > 0 && playerState != PlayerState.DASHING) {
+            String side = facingDirection == Direction.RIGHT ? "RIGHT" : "LEFT";
+            if (airGroundState == AirGroundState.AIR) {
+                this.currentAnimationName = "AIR_ATTACK_" + side;
+            } else {
+                this.currentAnimationName = "ATTACK_" + side;
+            }
+        }
+    }
+
+    private String getStandingAnimationName() {
+        String animationName = facingDirection == Direction.RIGHT ? "STAND_RIGHT" : "STAND_LEFT";
+        int centerX = Math.round(getBounds().getX1()) + Math.round(getBounds().getWidth() / 2f);
+        int centerY = Math.round(getBounds().getY1()) + Math.round(getBounds().getHeight() / 2f);
+        MapTile currentMapTile = map.getTileByPosition(centerX, centerY);
+
+        if (currentMapTile != null && currentMapTile.getTileType() == TileType.WATER) {
+            return facingDirection == Direction.RIGHT ? "SWIM_STAND_RIGHT" : "SWIM_STAND_LEFT";
+        }
+        return animationName;
     }
 
     @Override

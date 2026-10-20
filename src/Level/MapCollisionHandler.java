@@ -16,21 +16,26 @@ public class MapCollisionHandler {
         float edgeBoundX = direction == Direction.LEFT ? gameObject.getBounds().getX1() : gameObject.getBounds().getX2();
         Point tileIndex = map.getTileIndexByPosition(edgeBoundX, gameObject.getBounds().getY1());
         MapTile entityCollidedWith = null;
+        int xStep = direction == Direction.LEFT ? -1 : 1;
+        int xOffset = direction == Direction.LEFT ? 1 : -1;
         for (int i = -1; i <= numberOfTilesToCheck + 1; i++) {
-            MapTile mapTile = map.getMapTile(Math.round(tileIndex.x), Math.round(tileIndex.y + i));
-            if (mapTile != null && hasCollidedWithMapEntity(gameObject, mapTile, direction)) {
-                entityCollidedWith = mapTile;
-                float adjustedPositionX = gameObject.getX();
-                if (direction == Direction.RIGHT) {
-                    float boundsDifference = gameObject.getX2() - gameObject.getBounds().getX2();
-                    adjustedPositionX = mapTile.getBounds().getX1() - gameObject.getWidth() + boundsDifference;
-                } else if (direction == Direction.LEFT) {
-                    float boundsDifference = gameObject.getBounds().getX1() - gameObject.getX();
-                    adjustedPositionX = (mapTile.getBounds().getX2() + 1) - boundsDifference;
+            for (int j = 0; j <= 2; j++) {
+                MapTile mapTile = map.getMapTile(Math.round(tileIndex.x) + xOffset, Math.round(tileIndex.y + i));
+                xOffset += xStep;
+                if (mapTile != null && hasCollidedWithMapEntity(gameObject, mapTile, direction)) {
+                    entityCollidedWith = mapTile;
+                    float adjustedPositionX = gameObject.getX();
+                    if (direction == Direction.RIGHT) {
+                        float boundsDifference = gameObject.getX2() - gameObject.getBounds().getX2();
+                        adjustedPositionX = mapTile.getBounds().getX1() - gameObject.getWidth() + boundsDifference;
+                    } else if (direction == Direction.LEFT) {
+                        float boundsDifference = gameObject.getBounds().getX1() - gameObject.getX();
+                        adjustedPositionX = (mapTile.getBounds().getX2() + 1) - boundsDifference;
+                    }
+                    return new MapCollisionCheckResult(new Point(adjustedPositionX, gameObject.getY()), entityCollidedWith);
                 }
-                return new MapCollisionCheckResult(new Point(adjustedPositionX, gameObject.getY()), entityCollidedWith);
-
             }
+            xOffset = direction == Direction.LEFT ? 1 : -1;
         }
 
         // check active enhanced map tiles for potential collision
@@ -107,6 +112,7 @@ public class MapCollisionHandler {
                 case PASSABLE:
                     return false;
                 case NOT_PASSABLE:
+                case PILLAR:
                     return gameObject.intersects(mapTile);
                 case JUMP_THROUGH_PLATFORM:
                     return direction == Direction.DOWN && gameObject.intersects(mapTile) &&

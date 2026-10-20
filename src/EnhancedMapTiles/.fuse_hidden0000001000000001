@@ -1,0 +1,328 @@
+package EnhancedMapTiles;
+
+import Builders.FrameBuilder;
+import Enemies.Goblin;
+import Engine.GraphicsHandler;
+import Engine.ImageLoader;
+import Engine.Key;
+import Engine.KeyLocker;
+import Engine.Keyboard;
+import GameObject.Frame;
+import GameObject.SpriteSheet;
+import Level.Enemy;
+import Level.EnhancedMapTile;
+import Level.MapEntityStatus;
+import Level.Player;
+import Level.TileType;
+import Utils.Direction;
+import Utils.Point;
+
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
+
+// Interactive wishing well.
+// Stand near it and press E to drop a coin in. The well beams a column of light
+// that cycles through colours quickly, slows down, and settles on one at random.
+// Rarer colours are far less likely -- the reward hookup goes in onResult().
+public class WishingWell extends EnhancedMapTile {
+
+    // ---- the light colours, rarest last ----
+    public static final int BLUE = 0, GREEN = 1, RED = 2, PURPLE = 3, GOLD = 4;
+
+    private static final Color[] LIGHTS = {
+        new Color( 70, 130, 255),   // blue
+        new Color( 70, 210, 110),   // green
+        new Color(225,  60,  55),   // red
+        new Color(170,  80, 220),   // purple
+        new Color(255, 205,  70)    // gold
+    };
+
+    // relative odds -- blue is common, gold is the jackpot
+    private static final int[] WEIGHTS = { 40, 27, 20, 9, 4 };
+
+    // ---- tuning ----
+    private static final int COIN_COST     = 1;
+    private static final int SPIN_FRAMES   = 150;   // ~2.5s of cycling
+    private static final int SETTLE_HOLD   = 90;    // ~1.5s showing the result
+    private static final int FAST_STEP     = 2;     // frames per colour at the start
+    private static final int SLOW_STEP     = 16;    // frames per colour at the end
+    private static final int INTERACT_X    = 150;   // how close you must stand
+    private static final int INTERACT_Y    = 120;
+
+    // ---- geometry, measured from this tile's top-left corner ----
+    // place the tile on the well's top-left tile and these line up with the art
+    private static final int TILE          = 48;
+    private static final int MOUTH_X       = TILE * 2;      // centre of the 4-wide well
+    private static final int MOUTH_Y       = TILE * 3;      // top of the stone drum
+    private static final int BEAM_WIDTH    = 86;    // width at the base
+    private static final int BEAM_FLARE    = 4;     // extra width per segment going up
+    private static final int BEAM_SEGMENTS = 6;
+    private static final int SEGMENT_H     = 16;    // 6 x 16 = 96px tall, stops under the arch
+    private static final int CORE_WIDTH    = 28;
+    private static final int PROMPT_SIZE   = 26;    // on-screen size of the "E" key
+    private static final int PROMPT_LIFT   = 64;    // how far above the mouth it floats
+    private static final int DENY_FRAMES   = 36;    // flash when you cannot afford it
+    private static final int GOBLIN_WIDTH  = 104;   // Goblin frame size, for placing spawns
+    private static final int GOBLIN_HEIGHT = 80;
+
+    private enum WellState { IDLE, SPINNING, SETTLED }
+
+    private WellState state = WellState.IDLE;
+    private int spinTimer = 0;
+    private int stepTimer = 0;
+    private int holdTimer = 0;
+    private int lightIndex = 0;
+    private int pulse = 0;
+    private boolean playerNearby = false;   // draw() has no player, so update() caches it
+    private int denyTimer = 0;
+
+    private final KeyLocker keyLocker = new KeyLocker();
+    private final Key INTERACT_KEY = Key.E;
+    private final Random random = new Random();
+
+    // guards from the last red result -- used to stop them stacking up
+    private final ArrayList<Enemy> guards = new ArrayList<>();
+
+    // the "press E" prompt, drawn by hand rather than as this tile's own sprite
+    private final SpriteSheet promptSheet =
+        new SpriteSheet(ImageLoader.load("KeyPromptE.png"), 16, 16);
+
+    public WishingWell(Point location) {
+        super(location.x, location.y,
+              new SpriteSheet(ImageLoader.load("KeyPromptE.png"), 16, 16),
+              TileType.PASSABLE);
+    }
+
+    @Override
+    public void update(Player player) {
+        super.update(player);
+        pulse++;
+        playerNearby = canInteract(player);
+
+        if (denyTimer > 0) {
+            denyTimer--;
+        }
+
+        if (Keyboard.isKeyUp(INTERACT_KEY)) {
+            keyLocker.unlockKey(INTERACT_KEY);
+        }
+
+        switch (state) {
+            case IDLE:
+                if (playerNearby
+                        && Keyboard.isKeyDown(INTERACT_KEY)
+                        && !keyLocker.isKeyLocked(INTERACT_KEY)) {
+                    keyLocker.lockKey(INTERACT_KEY);
+                    if (player.spendCoins(COIN_COST)) {
+                        startSpin();
+                    } else {
+                        denyTimer = DENY_FRAMES;   // not enough coins -- flash the prompt
+                    }
+                }
+                break;
+
+            case SPINNING:
+                spinTimer--;
+                stepTimer--;
+                if (stepTimer <= 0) {
+                    lightIndex = (lightIndex + 1) % LIGHTS.length;
+                    stepTimer = currentStep();
+                }
+                if (spinTimer <= 0) {
+                    lightIndex = weightedPick();
+                    state = WellState.SETTLED;
+                    holdTimer = SETTLE_HOLD;
+                    onResult(lightIndex, player);
+                }
+                break;
+
+            case SETTLED:
+                holdTimer--;
+                if (holdTimer <= 0) {
+                    state = WellState.IDLE;
+                }
+                break;
+        }
+    }
+
+    private void startSpin() {
+        state = WellState.SPINNING;
+        spinTimer = SPIN_FRAMES;
+        stepTimer = FAST_STEP;
+        lightIndex = random.nextInt(LIGHTS.length);
+    }
+
+    // frames between colour changes -- short at the start, stretching out as it winds down
+    private int currentStep() {
+        float t = 1f - ((float) spinTimer / SPIN_FRAMES);     // 0 at the start, 1 at the end
+        return FAST_STEP + Math.round(t * t * (SLOW_STEP - FAST_STEP));
+    }
+
+    private int weightedPick() {
+        int total = 0;
+        for (int w : WEIGHTS) {
+            total += w;
+        }
+        int roll = random.nextInt(total);
+        for (int i = 0; i < WEIGHTS.length; i++) {
+            roll -= WEIGHTS[i];
+            if (roll < 0) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private boolean canInteract(Player player) {
+        float wellCentreX = getX() + MOUTH_X;
+        float wellCentreY = getY() + MOUTH_Y;
+        return Math.abs(player.getX() - wellCentreX) <= INTERACT_X
+            && Math.abs(player.getY() - wellCentreY) <= INTERACT_Y;
+    }
+
+    // ---- payouts ----
+    protected void onResult(int colour, Player player) {
+        switch (colour) {
+            case BLUE:                       // nothing -- you lose the coin
+                break;
+            case GREEN:
+                player.addCoins(5);
+                break;
+            case RED:                        // ambush: a goblin either side of the well
+                spawnGuards();
+                break;
+            case PURPLE:
+                player.addCoins(10);
+                break;
+            case GOLD:
+                player.addCoins(25);
+                break;
+        }
+    }
+
+    // drops a goblin just off each side of the well, both facing inward
+    private void spawnGuards() {
+        if (map == null || guardsStillAlive()) {
+            return;
+        }
+        guards.clear();
+
+        float groundY = getY() + TILE * 4 - GOBLIN_HEIGHT;   // stand them on the grass below
+        float leftX   = getX() - GOBLIN_WIDTH;
+        float rightX  = getX() + TILE * 4 + 8;
+
+        addGuard(new Goblin(new Point(leftX,  groundY), Direction.RIGHT));
+        addGuard(new Goblin(new Point(rightX, groundY), Direction.LEFT));
+    }
+
+    private void addGuard(Enemy guard) {
+        guards.add(guard);
+        map.addEnemy(guard);
+    }
+
+    // true while any guard from the previous red result is still on its feet
+    private boolean guardsStillAlive() {
+        for (Enemy guard : guards) {
+            if (guard.getMapEntityStatus() != MapEntityStatus.REMOVED) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isSpinning() {
+        return state == WellState.SPINNING;
+    }
+
+    public int getLastResult() {
+        return lightIndex;
+    }
+
+    @Override
+    public void draw(GraphicsHandler graphicsHandler) {
+        // the well itself is drawn by the map tiles -- this tile is invisible,
+        // so deliberately no super.draw() here
+        int x = Math.round(getCalibratedXLocation());
+        int y = Math.round(getCalibratedYLocation());
+
+        if (state == WellState.IDLE) {
+            if (playerNearby) {
+                drawPrompt(graphicsHandler, x, y);
+            }
+        } else {
+            drawBeam(graphicsHandler, x, y, LIGHTS[lightIndex]);
+        }
+    }
+
+    private void drawPrompt(GraphicsHandler graphicsHandler, int x, int y) {
+        int px = x + MOUTH_X - PROMPT_SIZE / 2;
+        int py = y + MOUTH_Y - PROMPT_LIFT;
+
+        if (denyTimer > 0) {
+            // can't afford it -- shake and flash red so it reads as a refusal
+            px += ((denyTimer / 3) % 2 == 0) ? 2 : -2;
+            graphicsHandler.drawFilledRectangle(
+                px - 3, py - 3, PROMPT_SIZE + 6, PROMPT_SIZE + 6,
+                new Color(220, 40, 40, 150));
+        }
+
+        // gentle bob, using the two frames of KeyPromptE.png
+        int frame = (pulse / 30) % 2;
+        graphicsHandler.drawImage(
+            promptSheet.getSprite(0, frame),
+            px, py, PROMPT_SIZE, PROMPT_SIZE);
+    }
+
+    private void drawBeam(GraphicsHandler graphicsHandler, int x, int y, Color colour) {
+        int cx = x + MOUTH_X;
+        int baseY = y + MOUTH_Y;
+
+        // brighter while it is still cycling, steady once it settles
+        int peak = (state == WellState.SETTLED) ? 190 : 150;
+
+        // glow pooled at the well mouth -- sits entirely above baseY so it never
+        // paints over the stone drum below
+        for (int i = 3; i >= 1; i--) {
+            int r = 12 + i * 11;
+            graphicsHandler.drawFilledRectangle(
+                cx - r, baseY - r, r * 2, r,
+                alpha(colour, peak / (i + 1)));
+        }
+
+        // column of light rising out of the well, fading and flaring as it climbs
+        for (int i = 0; i < BEAM_SEGMENTS; i++) {
+            int segTop = baseY - (i + 1) * SEGMENT_H;
+            int a = Math.round(peak * (1f - (float) i / BEAM_SEGMENTS));
+            if (a <= 0) {
+                continue;
+            }
+            int w = BEAM_WIDTH + i * BEAM_FLARE;
+            graphicsHandler.drawFilledRectangle(
+                cx - w / 2, segTop, w, SEGMENT_H, alpha(colour, a));
+            // brighter core down the middle
+            graphicsHandler.drawFilledRectangle(
+                cx - CORE_WIDTH / 2, segTop, CORE_WIDTH, SEGMENT_H,
+                alpha(colour, Math.min(255, a + 50)));
+        }
+    }
+
+    private Color alpha(Color c, int a) {
+        return new Color(c.getRed(), c.getGreen(), c.getBlue(), Math.max(0, Math.min(255, a)));
+    }
+
+    @Override
+    public HashMap<String, Frame[]> loadAnimations(SpriteSheet spriteSheet) {
+        return new HashMap<String, Frame[]>() {{
+            put("DEFAULT", new Frame[] {
+                new FrameBuilder(spriteSheet.getSprite(0, 0), 30)
+                        .withScale(3)
+                        .build(),
+                new FrameBuilder(spriteSheet.getSprite(0, 1), 30)
+                        .withScale(3)
+                        .build()
+            });
+        }};
+    }
+}

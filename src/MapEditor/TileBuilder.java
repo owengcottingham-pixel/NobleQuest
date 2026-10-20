@@ -1,6 +1,7 @@
 package MapEditor;
 
 import Engine.GraphicsHandler;
+import EnhancedMapTiles.Coin;
 import EnhancedMapTiles.DisappearingPlatform;
 import GameObject.Rectangle;
 import Level.*;
@@ -22,6 +23,7 @@ public class TileBuilder extends JPanel {
     private boolean showEnhancedMapTiles;
     private boolean showEnemies;
     private boolean placeDisappearingPlatform;
+    private boolean placeCoin;
 
     public TileBuilder(SelectedTileIndexHolder controlPanelHolder, JLabel hoveredTileIndexLabel) {
         setBackground(Colors.MAGENTA);
@@ -137,6 +139,14 @@ public class TileBuilder extends JPanel {
             return;
         }
 
+        if (placeCoin) {
+            if (!hasCoinAt(selectedMapTile.getX(), selectedMapTile.getY())) {
+                map.addEditorEnhancedMapTile(new Coin(selectedMapTile.getX(), selectedMapTile.getY()));
+            }
+            repaint();
+            return;
+        }
+
         MapTile newMapTile = map.getTileset().getTile(controlPanelHolder.getSelectedTileIndex())
             .build(selectedMapTile.getX(), selectedMapTile.getY());
         newMapTile.setMap(map);
@@ -163,6 +173,17 @@ public class TileBuilder extends JPanel {
             hoveredTileIndexLabel.setText("X: " + hoveredIndexX + ", Y: " + hoveredIndexY);
             repaint();
         }
+    }
+
+    private boolean hasCoinAt(float x, float y) {
+        for (EnhancedMapTile tile : map.getEditorEnhancedMapTiles()) {
+            if (tile instanceof Coin
+                    && Math.round(tile.getX()) == Math.round(x)
+                    && Math.round(tile.getY()) == Math.round(y)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected MapTile getHoveredTile(Point mousePoint) {
@@ -214,11 +235,22 @@ public class TileBuilder extends JPanel {
 
     public void setPlaceDisappearingPlatform(boolean placeDisappearingPlatform) {
         this.placeDisappearingPlatform = placeDisappearingPlatform;
-        if (placeDisappearingPlatform) {
-            setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
-        } else {
-            setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-        }
+        updatePlacementCursor();
+    }
+
+    public boolean getPlaceCoin() {
+        return placeCoin;
+    }
+
+    public void setPlaceCoin(boolean placeCoin) {
+        this.placeCoin = placeCoin;
+        updatePlacementCursor();
+    }
+
+    private void updatePlacementCursor() {
+        setCursor(new Cursor(placeDisappearingPlatform || placeCoin
+            ? Cursor.CROSSHAIR_CURSOR
+            : Cursor.DEFAULT_CURSOR));
     }
 
     public boolean getShowEnemies() {

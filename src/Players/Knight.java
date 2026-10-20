@@ -16,7 +16,7 @@ public class Knight extends Player {
 
 
     public Knight(float x, float y) {
-        super(new SpriteSheet(ImageLoader.load("Knight.png"), 112, 84), x, y, "STAND_RIGHT");        gravity = .5f;
+        super(new SpriteSheet(ImageLoader.load("CAPEKnight.png"), 112, 84), x, y, "STAND_RIGHT");        gravity = .5f;
         terminalVelocityY = 6f;
         jumpHeight = 14.5f;
         jumpDegrade = .5f;
@@ -27,149 +27,40 @@ public class Knight extends Player {
     
 
     @Override
-    public HashMap<String, Frame[]> loadAnimations(SpriteSheet spriteSheet) {
-        return new HashMap<String, Frame[]>() {{
+    public HashMap<String, Frame[]>loadAnimations(SpriteSheet spriteSheet) {
+        HashMap<String, Frame[]> animations = new HashMap<>();
 
-            put("STAND_RIGHT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 0))
-                    .withScale(1)
-                    .withBounds(43, 10, 25, 70)
-                    .build()
-            });
+        for (String side : new String[] { "RIGHT", "LEFT" }) {
+            boolean left = side.equals("LEFT");
 
-            put("STAND_LEFT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 0))
-                    .withScale(1)
-                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70)
-                    .build()
-            });
+            // row, starting column, delay for each frame (0 = stay on that frame)
+            animations.put("STAND_" + side,      animate(spriteSheet, 0, 0, new int[] { 10, 10, 10, 10 }, left));
+            animations.put("WALK_" + side,       animate(spriteSheet, 1, 0, new int[] { 5, 5, 5, 5, 5, 5, 5 }, left));
+            animations.put("JUMP_" + side,       animate(spriteSheet, 2, 0, new int[] { 3, 4, 0 }, left));
+            animations.put("FALL_" + side,       animate(spriteSheet, 2, 3, new int[] { 6, 6, 0 }, left));
+            animations.put("ATTACK_" + side,     animate(spriteSheet, 3, 0, new int[] { 2, 2, 2, 3, 3 }, left));
+            animations.put("AIR_ATTACK_" + side, animate(spriteSheet, 4, 0, new int[] { 3, 3, 3, 3 }, left));
+            animations.put("DASH_" + side,       animate(spriteSheet, 5, 0, new int[] { 3, 5, 0 }, left));
+            animations.put("SHOOT_" + side,      animate(spriteSheet, 6, 0, new int[] { 8, 3, 5, 5, 5 }, left));
+            animations.put("SWIM_STAND_" + side, animate(spriteSheet, 0, 0, new int[] { 10, 10, 10, 10 }, left));
+            animations.put("CROUCH_" + side,     animate(spriteSheet, 0, 0, new int[] { 0 }, left));
+            animations.put("DEATH_" + side,      animate(spriteSheet, 7, 0, new int[] { 6, 6, 6, 6, 8, 0 }, left));
+        }
 
-            put("WALK_RIGHT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 0), 14)
-                    .withScale(1)
-                    .withBounds(43, 10, 25, 70)
-                    .build(),
-                new FrameBuilder(spriteSheet.getSprite(0, 1), 14)
-                    .withScale(1)
-                    .withBounds(43, 10, 25, 70)
-                    .build()
-            });
-
-            put("WALK_LEFT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 0), 14)
-                    .withScale(1)
-                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70)
-                    .build(),
-                new FrameBuilder(spriteSheet.getSprite(0, 1), 14)
-                    .withScale(1)
-                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70)
-                    .build()
-            });
-
-            put("JUMP_RIGHT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 1))
-                    .withScale(1)
-                    .withBounds(43, 10, 25, 70)
-                    .build()
-            });
-
-            put("JUMP_LEFT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 1))
-                    .withScale(1)
-                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70)
-                    .build()
-            });
-
-            put("FALL_RIGHT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 1))
-                    .withScale(1)
-                    .withBounds(43, 10, 25, 70)
-                    .build()
-            });
-
-            put("FALL_LEFT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 1))
-                    .withScale(1)
-                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70)
-                    .build()
-            });
-
-            put("ATTACK_RIGHT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(1, 0), 6)
-                    .withScale(1)
-                    .withBounds(43, 10, 25, 70)
-                    .build(),
-                new FrameBuilder(spriteSheet.getSprite(1, 1), 6)
-                    .withScale(1)
-                    .withBounds(43, 10, 25, 70)
-                    .build()
-            });
-
-            put("ATTACK_LEFT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(1, 0), 6)
-                    .withScale(1)
-                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70)
-                    .build(),
-                new FrameBuilder(spriteSheet.getSprite(1, 1), 6)
-                    .withScale(1)
-                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70)
-                    .build()
-            });
-
-            put("CROUCH_RIGHT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 0))
-                    .withScale(1)
-                    .withBounds(43, 10, 25, 70)
-                    
-                    .build()
-            });
-
-            put("CROUCH_LEFT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 0))
-                    .withScale(1)
-                    .withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70)
-                    .build()
-            });
-            put("DASH_RIGHT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(3, 1))
-                    .withScale(1).withBounds(43, 10, 25, 70).build()
-    
-            });
-
-            put("DASH_LEFT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(3, 1))
-                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70).build()
-            });
-
-            put("DEATH_RIGHT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 0), 12)
-                    .withScale(1).withBounds(43, 10, 25, 70).build(),
-                new FrameBuilder(spriteSheet.getSprite(3, 0), 48)
-                    .withScale(1).withBounds(21, 60, 70, 20).build(),
-                new FrameBuilder(spriteSheet.getSprite(3, 0))
-                    .withScale(1).withBounds(21, 60, 70, 20).build()
-            });
-
-            put("DEATH_LEFT", new Frame[] {
-                new FrameBuilder(spriteSheet.getSprite(0, 0), 12)
-                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(44, 10, 25, 70).build(),
-                new FrameBuilder(spriteSheet.getSprite(3, 0), 48)
-                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(21, 60, 70, 20).build(),
-                new FrameBuilder(spriteSheet.getSprite(3, 0))
-                    .withScale(1).withImageEffect(ImageEffect.FLIP_HORIZONTAL)
-                    .withBounds(21, 60, 70, 20).build()
-            });
-        }};
+        return animations;
+    }
+    // frames go left to right along one row of the sprite sheet
+    private Frame[] animate(SpriteSheet sheet, int row, int startCol, int[] delays, boolean left) {
+        Frame[] frames = new Frame[delays.length];
+        for (int i = 0; i < delays.length; i++) {
+            FrameBuilder builder = new FrameBuilder(sheet.getSprite(row, startCol + i), delays[i]).withScale(1);
+            if (left) {
+                builder = builder.withImageEffect(ImageEffect.FLIP_HORIZONTAL).withBounds(44, 10, 25, 70);
+            } else {
+                builder = builder.withBounds(43, 10, 25, 70);
+            }
+            frames[i] = builder.build();
+        }
+        return frames;
     }
 }

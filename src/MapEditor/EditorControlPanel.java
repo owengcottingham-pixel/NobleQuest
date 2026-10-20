@@ -126,7 +126,12 @@ public class EditorControlPanel extends JPanel {
 
             // Save enhanced objects placed through the editor after the normal tile grid.
             for (Level.EnhancedMapTile enhancedMapTile : map.getEditorEnhancedMapTiles()) {
-                if (enhancedMapTile instanceof EnhancedMapTiles.DisappearingPlatform) {
+                if (enhancedMapTile instanceof EnhancedMapTiles.Coin) {
+                    fileWriter.write("\nCOIN ");
+                    fileWriter.write(String.valueOf(enhancedMapTile.getX()));
+                    fileWriter.write(" ");
+                    fileWriter.write(String.valueOf(enhancedMapTile.getY()));
+                } else if (enhancedMapTile instanceof EnhancedMapTiles.DisappearingPlatform) {
                     fileWriter.write("\nDISAPPEARING_PLATFORM ");
                     fileWriter.write(String.valueOf(enhancedMapTile.getX()));
                     fileWriter.write(" ");

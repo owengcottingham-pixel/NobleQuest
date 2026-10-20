@@ -3,9 +3,9 @@ package EnhancedMapTiles;
 import Builders.FrameBuilder;
 import Engine.GraphicsHandler;
 import Engine.ImageLoader;
+import GameObject.IntersectableRectangle;
 import GameObject.Rectangle;
 import Level.EnhancedMapTile;
-import Level.MapEntityStatus;
 import Level.Player;
 import Level.TileType;
 import Utils.AirGroundState;
@@ -18,8 +18,10 @@ public class DisappearingPlatform extends EnhancedMapTile {
 
     private static final int TOTAL_TIME = 60;
     private static final int DECAY_START = 20;
+    private static final int RESPAWN_TIME = 5 * 60;
 
     private int standingTimer = 0;
+    private int respawnTimer = 0;
     private boolean triggered = false;
     private State state = State.NORMAL;
 
@@ -81,7 +83,16 @@ public class DisappearingPlatform extends EnhancedMapTile {
     @Override
     public void update(Player player) {
         if (state == State.GONE) {
-            return;
+            respawnTimer++;
+            if (respawnTimer < RESPAWN_TIME) {
+                return;
+            }
+
+            state = State.NORMAL;
+            tileType = TileType.JUMP_THROUGH_PLATFORM;
+            standingTimer = 0;
+            respawnTimer = 0;
+            triggered = false;
         }
 
         boolean playerStandingOnPlatform =
@@ -104,12 +115,23 @@ public class DisappearingPlatform extends EnhancedMapTile {
 
             if (standingTimer >= TOTAL_TIME) {
                 state = State.GONE;
-                setMapEntityStatus(MapEntityStatus.REMOVED);
+                tileType = TileType.PASSABLE;
+                respawnTimer = 0;
                 return;
             }
         }
 
         super.update(player);
+    }
+
+    @Override
+    public boolean intersects(IntersectableRectangle other) {
+        return state != State.GONE && super.intersects(other);
+    }
+
+    @Override
+    public boolean touching(IntersectableRectangle other) {
+        return state != State.GONE && super.touching(other);
     }
 
     @Override

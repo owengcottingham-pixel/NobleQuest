@@ -28,7 +28,7 @@ It was a standard platformer game (with some VERY odd design choices), but the l
 If you're curious, [here](https://www.youtube.com/watch?v=haRt2Z8-7-A) is a video of the Speedy Eggbert map editor being used.
 
 While this game's map editor is limited compared to commercial map editors for other video games you may have seen/used, it is still very useful for designing a map and being able to see what you are doing as you go. 
-It is currently only usable for placing map tiles -- other entities like NPCs must be created and added through code.
+It can place map tiles, disappearing platforms, and collectible coins. Other entities like NPCs must be created and added through code.
 
 To start the map editor, run the `main` method in the `MapEditor` class. 
 Remember that this is a separate program from the actual game code, although both make use of the same classes in this project.
@@ -41,6 +41,7 @@ This Map Editor allows you to do the following:
 - Add a new Map to the game
 - Change the individual tiles of a map (which maintain their tile logic defined in code)
 - Change the dimensions of a map (how many tiles the map contains width and height wise)
+- Place collectible coins and disappearing platforms from the Options menu
 
 ![map-editor.png](../assets/images/map-editor.PNG)
 
@@ -64,6 +65,8 @@ The dropdown on the top left can be used to change which map is currently being 
 To save any changes to a map, hit the "Save Map" button. 
 Do not forget to do save the map before switching maps or existing the program!
 Otherwise, any changes to be discarded.
+
+To place a coin or disappearing platform, select its option from the Options menu and click a map tile. Coins are collected by the player for 10 coins each. Disappearing platforms return five seconds after they vanish. Use "Show Enhanced Map Tiles" to view placed objects; selecting either placement option enables this view automatically.
 
 The "Set Map Dimensions" button will allow you to change the size of the map (number of tiles width and height). 
 It'll also allow you to choose which side of the map to apply changes to when growing/shrinking a map's dimensions -- for example, if increasing the width of the map, more tile space can be added either to the right side or the left of the map.

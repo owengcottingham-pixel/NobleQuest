@@ -68,7 +68,11 @@ public class FallingObject extends EnhancedMapTile {
             boolean playerIsBelow =
                 player.getBounds().getY1() >= getBounds().getY2();
 
-            if (horizontallyUnder && playerIsBelow) {
+            if (
+                horizontallyUnder &&
+                playerIsBelow &&
+                !isBlockedByNonPassableTile(player)
+            ) {
                 state = State.FALLING;
             }
         }
@@ -106,6 +110,43 @@ public class FallingObject extends EnhancedMapTile {
         }
 
         super.update(player);
+    }
+
+    private boolean isBlockedByNonPassableTile(Player player) {
+        if (map == null) {
+            return false;
+        }
+
+        float left = Math.max(getBounds().getX1(), player.getBounds().getX1());
+        float right = Math.min(getBounds().getX2(), player.getBounds().getX2());
+        float top = getBounds().getY2();
+        float bottom = player.getBounds().getY1();
+        int tileWidth = map.getTileset().getScaledSpriteWidth();
+        int tileHeight = map.getTileset().getScaledSpriteHeight();
+
+        int firstTileX = (int) Math.floor(left / tileWidth);
+        int lastTileX = (int) Math.floor(right / tileWidth);
+        int firstTileY = (int) Math.floor(top / tileHeight);
+        int lastTileY = (int) Math.floor(bottom / tileHeight);
+
+        for (int tileY = firstTileY; tileY <= lastTileY; tileY++) {
+            for (int tileX = firstTileX; tileX <= lastTileX; tileX++) {
+                MapTile tile = map.getMapTile(tileX, tileY);
+                if (
+                    tile != null &&
+                    (tile.getTileType() == TileType.NOT_PASSABLE ||
+                     tile.getTileType() == TileType.PILLAR) &&
+                    tile.getBounds().getX2() >= left &&
+                    tile.getBounds().getX1() <= right &&
+                    tile.getBounds().getY2() > top &&
+                    tile.getBounds().getY1() < bottom
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private void killPlayerAndRemove(Player player) {

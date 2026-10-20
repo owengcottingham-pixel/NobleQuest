@@ -23,7 +23,7 @@ A map file is a text file that contains information on the map dimensions as wel
 Map files can be created with the Map Editor, which you can find information on [here](../../../MapEditor/map-editor.md), and are located in the `MapFiles` folder.
 
 ## Map file structure
-There are two parts to a map file. If you did the infamous `Maze` project in Quinnipiac's CSC111 course, this file will look very familiar.
+Each map file starts with the map dimensions and tile grid. Some files also include editor-placed object records after the grid. If you did the infamous `Maze` project in Quinnipiac's CSC111 course, the tile grid will look very familiar.
 
 Below is an example map file:
 
@@ -63,3 +63,5 @@ For this reason, a one-dimensional array is used, and items are retrieved from t
 Afterwards, each tile index of the map is read in one at a time and is given to the map's `Tileset` instance. 
 The `Tileset` then returns a `MapTileBuilder` that maps to that tile index (the `MapTilBuilder` is basically a pre-setup `MapTile` defined in the `Tileset`, however it has not been instantiated yet). 
 It is at this point that the `Map` class actually instantiates and initializes each `MapTile` and sets its location to the correct position to construct the entire "map image".
+
+Editor-placed objects are stored after the tile grid, one record per line. For example, `COIN x y` places a collectible coin at the given pixel coordinates. Older map files without object records continue to load normally.
