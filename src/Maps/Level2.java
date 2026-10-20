@@ -1,6 +1,7 @@
 package Maps;
 
 import Enemies.HobGoblin;
+import Enemies.MushrumEnemy;
 import Enemies.StoneEnemy;
 import Enemies.VerticalStoneEnemy;
 import EnhancedMapTiles.BouncyPlatform;
@@ -49,6 +50,14 @@ public class Level2 extends Map {
             HobGoblin hobgoblin = new HobGoblin(hobgoblinTile2.getLocation().subtractY(0), Direction.LEFT);
             enemies.add(hobgoblin);
      }
+
+        MapTile mushrumStartTile = getMapTile(10, 199);
+        MapTile mushrumEndTile = getMapTile(30, 199);
+        if (mushrumStartTile != null && mushrumEndTile != null) {
+            Point mushrumStart = mushrumStartTile.getLocation().subtractY(103);
+            Point mushrumEnd = mushrumEndTile.getLocation().subtractY(103);
+            enemies.add(new MushrumEnemy(mushrumStart, mushrumEnd, Direction.RIGHT));
+        }
 
         MapTile stoneEnemyTile = getMapTile(13, 195);
         if (stoneEnemyTile != null) {
@@ -151,7 +160,7 @@ public class Level2 extends Map {
         enhancedMapTiles.add(new HorizontalMovingPlatform(
                 ImageLoader.load("GreenPlatform.png"),
                 getMapTile(46, 178).getLocation(),
-                getMapTile(51, 178).getLocation(),
+                getMapTile(50, 178).getLocation(),
                 TileType.JUMP_THROUGH_PLATFORM,
                 4,
                 new Rectangle(0, 6, 16, 4),
@@ -162,7 +171,7 @@ public class Level2 extends Map {
         enhancedMapTiles.add(new HorizontalMovingPlatform(
                 ImageLoader.load("GreenPlatform.png"),
                 getMapTile(45, 182).getLocation(),
-                getMapTile(51, 182).getLocation(),
+                getMapTile(50, 182).getLocation(),
                 TileType.JUMP_THROUGH_PLATFORM,
                 4,
                 new Rectangle(0, 6, 16, 4),
@@ -173,7 +182,7 @@ public class Level2 extends Map {
         enhancedMapTiles.add(new HorizontalMovingPlatform(
                 ImageLoader.load("GreenPlatform.png"),
                 getMapTile(43, 186).getLocation(),
-                getMapTile(50, 186).getLocation(),
+                getMapTile(49, 186).getLocation(),
                 TileType.JUMP_THROUGH_PLATFORM,
                 4,
                 new Rectangle(0, 6, 16, 4),
