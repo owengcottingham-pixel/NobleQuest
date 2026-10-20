@@ -124,6 +124,10 @@ map.addEnemy(fireball);
 
 The image file for the dinosaur enemy is `DinosaurEnemy.png`.
 
+### Mushrum Enemy
+
+The `MushrumEnemy` uses `mushrumEnemy.png` to walk back and forth between two points. Jumping on its head plays its smush animation; it stays flattened briefly, then gets back up and resumes walking. Touching it from the side deals one point of damage.
+
 ### Fireball
 
 ![fireball.png](../../../assets/images/fireball.png)
