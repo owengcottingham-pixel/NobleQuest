@@ -1,3 +1,4 @@
+
 package Screens;
 
 import Engine.*;
@@ -6,17 +7,29 @@ import Game.ScreenCoordinator;
 import Level.Map;
 import Maps.TitleScreenMap;
 import SpriteFont.SpriteFont;
-
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
-// This is the class for the main menu screen
+// Main menu screen
 public class MenuScreen extends Screen {
+
     protected ScreenCoordinator screenCoordinator;
-    protected int currentMenuItemHovered = 0; // current menu item being "hovered" over
+    protected int currentMenuItemHovered = 0;
     protected int menuItemSelected = -1;
+
     protected SpriteFont playGame;
     protected SpriteFont credits;
     protected Map background;
+
+    // Logo image
+    protected BufferedImage logo;
+
+    // Logo position and size
+    protected int logoX = 400;
+    protected int logoY = 50;
+    protected int logoWidth = 500;
+    protected int logoHeight = 500;
+
     protected int keyPressTimer;
     protected int pointerLocationX, pointerLocationY;
     protected KeyLocker keyLocker = new KeyLocker();
@@ -27,74 +40,130 @@ public class MenuScreen extends Screen {
 
     @Override
     public void initialize() {
-        playGame = new SpriteFont("PLAY GAME", 200, 123, "Arial", 30, new Color(49, 207, 240));
+
+        // Load the logo image
+        logo = ImageLoader.load("logo.png");
+
+        playGame = new SpriteFont(
+            "PLAY GAME", 200, 123,
+            "Arial", 30, new Color(49, 207, 240)
+        );
         playGame.setOutlineColor(Color.black);
         playGame.setOutlineThickness(3);
-        credits = new SpriteFont("CREDITS", 200, 223, "Arial", 30, new Color(49, 207, 240));
+
+        credits = new SpriteFont(
+            "CREDITS", 200, 223,
+            "Arial", 30, new Color(49, 207, 240)
+        );
         credits.setOutlineColor(Color.black);
         credits.setOutlineThickness(3);
+
         background = new TitleScreenMap();
         background.setAdjustCamera(false);
+
         keyPressTimer = 0;
         menuItemSelected = -1;
+        currentMenuItemHovered = 0;
+
         keyLocker.lockKey(Key.SPACE);
     }
 
+    @Override
     public void update() {
-        // update background map (to play tile animations)
+
+        // Update background animations
         background.update(null);
 
-        // if down or up is pressed, change menu item "hovered" over (blue square in front of text will move along with currentMenuItemHovered changing)
-        if (Keyboard.isKeyDown(Key.DOWN) &&  keyPressTimer == 0) {
+        // Move menu selection
+        if (Keyboard.isKeyDown(Key.DOWN) && keyPressTimer == 0) {
             keyPressTimer = 14;
             currentMenuItemHovered++;
-        } else if (Keyboard.isKeyDown(Key.UP) &&  keyPressTimer == 0) {
+
+        } else if (Keyboard.isKeyDown(Key.UP) && keyPressTimer == 0) {
             keyPressTimer = 14;
             currentMenuItemHovered--;
+
         } else {
             if (keyPressTimer > 0) {
                 keyPressTimer--;
             }
         }
 
-        // if down is pressed on last menu item or up is pressed on first menu item, "loop" the selection back around to the beginning/end
+        // Loop menu selection
         if (currentMenuItemHovered > 1) {
             currentMenuItemHovered = 0;
         } else if (currentMenuItemHovered < 0) {
             currentMenuItemHovered = 1;
         }
 
-        // sets location for blue square in front of text (pointerLocation) and also sets color of spritefont text based on which menu item is being hovered
+        // Highlight selected menu option
         if (currentMenuItemHovered == 0) {
+
             playGame.setColor(new Color(255, 215, 0));
             credits.setColor(new Color(49, 207, 240));
+
             pointerLocationX = 170;
             pointerLocationY = 130;
+
         } else if (currentMenuItemHovered == 1) {
+
             playGame.setColor(new Color(49, 207, 240));
             credits.setColor(new Color(255, 215, 0));
+
             pointerLocationX = 170;
             pointerLocationY = 230;
         }
 
-        // if space is pressed on menu item, change to appropriate screen based on which menu item was chosen
+        // Unlock space when released
         if (Keyboard.isKeyUp(Key.SPACE)) {
             keyLocker.unlockKey(Key.SPACE);
         }
-        if (!keyLocker.isKeyLocked(Key.SPACE) && Keyboard.isKeyDown(Key.SPACE)) {
+
+        // Select menu option
+        if (!keyLocker.isKeyLocked(Key.SPACE)
+                && Keyboard.isKeyDown(Key.SPACE)) {
+
             menuItemSelected = currentMenuItemHovered;
+
             if (menuItemSelected == 0) {
                 screenCoordinator.setGameState(GameState.LEVEL);
+
             } else if (menuItemSelected == 1) {
                 screenCoordinator.setGameState(GameState.CREDITS);
             }
         }
     }
 
+    @Override
     public void draw(GraphicsHandler graphicsHandler) {
+
+        // Draw menu background
         background.draw(graphicsHandler);
+
+        // Draw logo over the background
+        if (logo != null) {
+            graphicsHandler.drawImage(
+                logo,
+                logoX,
+                logoY,
+                logoWidth,
+                logoHeight
+            );
+        }
+
+        // Draw menu buttons
         playGame.draw(graphicsHandler);
         credits.draw(graphicsHandler);
-        graphicsHandler.drawFilledRectangleWithBorder(pointerLocationX, pointerLocationY, 20, 20, new Color(49, 207, 240), Color.black, 2);
+
+        // Draw blue selection square
+        graphicsHandler.drawFilledRectangleWithBorder(
+            pointerLocationX,
+            pointerLocationY,
+            20,
+            20,
+            new Color(49, 207, 240),
+            Color.black,
+            2
+        );
     }
 }
