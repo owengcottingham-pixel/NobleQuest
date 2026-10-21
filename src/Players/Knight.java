@@ -1,6 +1,7 @@
 package Players;
 
 import Builders.FrameBuilder;
+import Engine.GraphicsHandler;
 import Engine.ImageLoader;
 import GameObject.Frame;
 import GameObject.ImageEffect;
@@ -12,11 +13,28 @@ import Utils.Direction;
 import java.util.HashMap;
 
 public class Knight extends Player {
-    
 
+    // The knight's own sheet has a blue crest on the helmet, right where a hat
+    // goes. The bare sheet is the same art with the crest taken off, so wearing
+    // a hat swaps to that one and taking it off swaps back.
+    private static final String CRESTED_SHEET = "CAPEKnight.png";
+    private static final String BARE_SHEET = "CAPEKnightBare.png";
+
+    // static, so a hat survives dying and the level reloading -- a new Knight is
+    // built every time the level restarts, and losing a bought hat to a goblin
+    // would be a rough deal
+    private static int equippedHat = HatSet.NONE;
+
+    private String sheetInUse;
+
+    private static String sheetFor(int hatIndex) {
+        return hatIndex == HatSet.NONE ? CRESTED_SHEET : BARE_SHEET;
+    }
 
     public Knight(float x, float y) {
-        super(new SpriteSheet(ImageLoader.load("CAPEKnight.png"), 112, 84), x, y, "STAND_RIGHT");        gravity = .5f;
+        super(new SpriteSheet(ImageLoader.load(sheetFor(equippedHat)), 112, 84), x, y, "STAND_RIGHT");
+        sheetInUse = sheetFor(equippedHat);
+        gravity = .5f;
         terminalVelocityY = 6f;
         jumpHeight = 14.5f;
         jumpDegrade = .5f;
@@ -25,6 +43,71 @@ public class Knight extends Player {
     }
     
     
+
+    @Override
+    public int getHat() {
+        return equippedHat;
+    }
+
+    @Override
+    public void setHat(int hatIndex) {
+        equippedHat = hatIndex;
+        String wanted = sheetFor(hatIndex);
+        if (wanted.equals(sheetInUse)) {
+            return;
+        }
+        // Keep the animation and the frame he is on. Resetting to frame 0 here
+        // would snap him back to the start of his stride the instant he puts a
+        // hat on, which reads as a stutter.
+        String animation = currentAnimationName;
+        int frame = currentFrameIndex;
+        this.animations = loadAnimations(new SpriteSheet(ImageLoader.load(wanted), 112, 84));
+        this.sheetInUse = wanted;
+        this.currentAnimationName = animation;
+        this.currentFrameIndex = frame;
+        updateCurrentFrame();
+    }
+
+    @Override
+    protected void drawCosmetics(GraphicsHandler graphicsHandler) {
+        if (equippedHat == HatSet.NONE) {
+            return;
+        }
+        int[] anchor = HatSet.anchor(currentAnimationName, currentFrameIndex);
+        if (anchor == null) {
+            return;                 // no upright head this frame (he is on the floor)
+        }
+        boolean facingLeft = currentAnimationName.endsWith("_LEFT");
+        graphicsHandler.drawImage(
+                HatSet.image(equippedHat),
+                Math.round(getCalibratedXLocation()) + HatSet.drawX(anchor, facingLeft),
+                Math.round(getCalibratedYLocation()) + HatSet.drawY(anchor),
+                HatSet.CELL_W,
+                HatSet.CELL_H,
+                facingLeft ? ImageEffect.FLIP_HORIZONTAL : ImageEffect.NONE);
+    }
+
+    // Rebuilds every animation from a different sheet, then refreshes the frame
+    // being shown so the change is visible immediately rather than on the next
+    // animation switch.
+    @Override
+    public void setCostume(String imageFileName) {
+        HashMap<String, Frame[]> previous = this.animations;
+        try {
+            this.animations = loadAnimations(new SpriteSheet(ImageLoader.load(imageFileName), 112, 84));
+            this.currentFrameIndex = 0;
+            updateCurrentFrame();
+        } catch (Exception e) {
+            // A sheet with a different grid (Knight.png is 3x6, this one needs
+            // 7x8) would throw while slicing frames and take the game down mid
+            // frame. Put the old costume back instead.
+            this.animations = previous;
+            this.currentFrameIndex = 0;
+            updateCurrentFrame();
+            System.out.println("Costume '" + imageFileName
+                    + "' does not fit the knight's sheet layout - keeping the current one. " + e);
+        }
+    }
 
     @Override
     public HashMap<String, Frame[]>loadAnimations(SpriteSheet spriteSheet) {

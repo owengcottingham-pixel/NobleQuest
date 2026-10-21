@@ -25,7 +25,7 @@ public abstract class Player extends GameObject {
 
     // these should be set in a subclass
 
-    protected int coins = 0;
+    protected int coins = 100;
     protected float walkSpeed = 0;
     protected float gravity = 0;
     protected float jumpHeight = 0;
@@ -771,6 +771,27 @@ public abstract class Player extends GameObject {
         listeners.add(listener);
     }
 
+    // Swaps the player's sprite sheet at runtime. Does nothing unless a subclass
+    // overrides it -- the shop calls this to put a costume on.
+    public void setCostume(String imageFileName) {
+    }
+
+    // Cosmetics. A player with no cosmetics of its own just ignores these; the
+    // Knight stores a hat and draws it on top of whatever frame is showing.
+    public void setHat(int hatIndex) {
+    }
+
+    public int getHat() {
+        return -1;
+    }
+
+    // Drawn immediately after the player's own sprite, every time it is drawn.
+    // Being a hook rather than a tack-on at the end of draw() means the hat
+    // follows the dash trail copies and vanishes with the invincibility blink
+    // instead of hovering over a player who is not there.
+    protected void drawCosmetics(GraphicsHandler graphicsHandler) {
+    }
+
     public int getCoins()
     {
         return coins;
@@ -805,12 +826,14 @@ public abstract class Player extends GameObject {
                 setX(dashTrailX.get(i));
                 setY(dashTrailY.get(i));
                 super.draw(graphicsHandler);
+                drawCosmetics(graphicsHandler);
             }
             setX(realX);
             setY(realY);
         }
 
         super.draw(graphicsHandler);
+        drawCosmetics(graphicsHandler);
     }
     // Uncomment this to have game draw player's bounds to make it easier to visualize
     /*
