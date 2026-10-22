@@ -15,6 +15,7 @@ import Level.TileLayout;
 import Utils.Direction;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 // This class represents a "common" tileset of standard tiles defined in the CommonTileset.png file
 public class CommonTileset extends Tileset {
@@ -509,6 +510,19 @@ public class CommonTileset extends Tileset {
         return new TileLayout(layout, Direction.RIGHT);
     }
 
-    
+    // ---------------- PUMPKIN ARENA TILES (Gourdzilla's arena) ----------------
+    // Every tile in PumpkinArenaTileset.png is also in this tileset, numbered from 1000 up
+    // (pumpkin tile 35 is 1035 in the map file). Starting at 1000 means adding new common
+    // tiles never shifts them. In the map editor they're at the end of the tile picker.
+    public static final int PUMPKIN_TILES_START = 1000;
 
+    @Override
+    public HashMap<Integer, MapTileBuilder> mapDefinedTilesToIndex() {
+        HashMap<Integer, MapTileBuilder> tiles = super.mapDefinedTilesToIndex();
+        ArrayList<MapTileBuilder> pumpkinTiles = new PumpkinArenaTileset().defineTiles();
+        for (int i = 0; i < pumpkinTiles.size(); i++) {
+            tiles.put(PUMPKIN_TILES_START + i, pumpkinTiles.get(i).withTileIndex(PUMPKIN_TILES_START + i));
+        }
+        return tiles;
+    }
 }

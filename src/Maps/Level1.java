@@ -1,11 +1,13 @@
 package Maps;
 
 import Enemies.Goblin;
+import Enemies.Gourdzilla;
 import Enemies.DinosaurEnemy;
 import Enemies.HobGoblin;
 import Engine.ImageLoader;
 import EnhancedMapTiles.EndLevelBox;
 import EnhancedMapTiles.HorizontalMovingPlatform;
+import EnhancedMapTiles.PumpkinGate;
 import EnhancedMapTiles.VerticalMovingPlatform;
 import EnhancedMapTiles.WishingWell;
 import EnhancedMapTiles.DisappearingPlatform;
@@ -20,6 +22,7 @@ import Utils.Direction;
 import Utils.Point;
 import EnhancedMapTiles.FallingObject;
 import EnhancedMapTiles.AmbushTrigger;
+import EnhancedMapTiles.BossArenaTrigger;
 import EnhancedMapTiles.Gate;
 import EnhancedMapTiles.CaveEntrance;
 import EnhancedMapTiles.WishingWell;
@@ -289,16 +292,6 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
 
     enhancedMapTiles.add(bouncy4);
 
-    BouncyPlatform bouncy5 = new BouncyPlatform(
-    ImageLoader.load("BouncyPlatform.png"),
-    getMapTile(270, 23).getLocation(),
-    3,
-    new Rectangle(0, 6, 16, 4),
-    4
-    );
-
-    enhancedMapTiles.add(bouncy5);
-
     SuperBouncyPlatform superBouncy1 = new SuperBouncyPlatform(
     ImageLoader.load("SuperBouncyPlatform.png"),
     getMapTile(105, 81).getLocation(),
@@ -391,19 +384,6 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
 
     enhancedMapTiles.add(hmp4);
 
-    HorizontalMovingPlatform hmp5 = new HorizontalMovingPlatform(
-        ImageLoader.load("GreenPlatform.png"),
-        getMapTile(269, 17).getLocation(),
-        getMapTile(273, 17).getLocation(),
-        TileType.JUMP_THROUGH_PLATFORM,
-        3,
-        new Rectangle(0, 6, 16, 4),
-        Direction.RIGHT,
-        2
-    );
-
-    enhancedMapTiles.add(hmp5);
-
     HorizontalMovingPlatform hmp6 = new HorizontalMovingPlatform(
         ImageLoader.load("GreenPlatform.png"),
         getMapTile(220, 12).getLocation(),
@@ -424,16 +404,20 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
 
     enhancedMapTiles.add(fallingObject);
 
-    Gate gate = new Gate(getMapTile(288, 16).getLocation(), 9);
-    enhancedMapTiles.add(gate);
+    // ---------------- GOURDZILLA'S ARENA ----------------
+    PumpkinGate leftGate = new PumpkinGate(getMapTile(268, 21).getLocation());
+    PumpkinGate rightGate = new PumpkinGate(getMapTile(289, 21).getLocation());
+    enhancedMapTiles.add(leftGate);
+    enhancedMapTiles.add(rightGate);
 
-    AmbushTrigger ambush = new AmbushTrigger(getMapTile(270, 20).getLocation(), 4, 4);
-    ambush.addEnemy(new HobGoblin(getMapTile(262, 12).getLocation(), Direction.RIGHT));
-    ambush.addEnemy(new HobGoblin(getMapTile(281, 12).getLocation(), Direction.LEFT));
-    ambush.addGate(gate);
-    enhancedMapTiles.add(ambush);
+    BossArenaTrigger bossTrigger = new BossArenaTrigger(getMapTile(276, 14).getLocation(), 4, 10);
+    bossTrigger.addGate(leftGate);
+    bossTrigger.addGate(rightGate);
 
-    CaveEntrance cave = new CaveEntrance(getMapTile(309, 22).getLocation(), 2, 2);    enhancedMapTiles.add(cave);
+    bossTrigger.setBoss(new Gourdzilla(getMapTile(282, 21).getLocation()));
+    enhancedMapTiles.add(bossTrigger);
+
+    CaveEntrance cave = new CaveEntrance(getMapTile(310, 22).getLocation(), 2, 2);    enhancedMapTiles.add(cave);
 
     return enhancedMapTiles;
 }

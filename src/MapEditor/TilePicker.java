@@ -23,6 +23,7 @@ public class TilePicker extends JPanel {
     private HashMap<Integer, MapTile> mapTiles = new HashMap<>();
     private int selectedTileIndex = 0;
     private SelectedTileIndexHolder selectedTileIndexHolder;
+    private Integer[] tileKeys = new Integer[0];   // the real tile number of each spot in the picker
 
     public TilePicker(SelectedTileIndexHolder selectedTileIndexHolder) {
         setBackground(Colors.MAGENTA);
@@ -60,7 +61,7 @@ public class TilePicker extends JPanel {
         }
         setPreferredSize(new Dimension(Math.max(144, width * tileset.getScaledSpriteWidth()), Math.max(391, height * tileset.getScaledSpriteHeight() + (6 * height))));
 
-        Integer[] tileKeys = mapTileBuilders.keySet().toArray(new Integer[mapTileBuilders.keySet().size()]);
+        tileKeys = mapTileBuilders.keySet().toArray(new Integer[mapTileBuilders.keySet().size()]);
         Arrays.sort(tileKeys);
         int currentKeyIndex = 0;
         outerLoop: for (int i = 0; i < height; i++) {
@@ -78,6 +79,10 @@ public class TilePicker extends JPanel {
                 currentKeyIndex++;
             }
         }
+
+        // start on the first tile, so a tile picked from another map's tileset doesn't carry over
+        selectedTileIndex = 0;
+        selectedTileIndexHolder.setSelectedTileIndex(tileKeys.length > 0 ? tileKeys[0] : 0);
         repaint();
     }
 
@@ -112,7 +117,8 @@ public class TilePicker extends JPanel {
         int selectedTileIndex = getClickedTileIndex(clickedPoint);
         if (selectedTileIndex >= 0) {
             this.selectedTileIndex = selectedTileIndex;
-            selectedTileIndexHolder.setSelectedTileIndex(selectedTileIndex);
+            // the picker's spots go 0, 1, 2... but the tile numbers don't have to (the pumpkin tiles start at 1000)
+            selectedTileIndexHolder.setSelectedTileIndex(tileKeys[selectedTileIndex]);
             repaint();
         }
     }

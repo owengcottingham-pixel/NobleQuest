@@ -70,8 +70,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     @Override
     public void initialize() {
         // define/setup map
-        this.map = new Level1();
-        //this.map = new Level2();
+        this.map = (currentLevel == 1) ? new Level1() : new Level2();
 
         // Set up the player at the current level's starting position.
         player = new Knight(
