@@ -22,6 +22,7 @@ import Level.NPC;
 import NPCs.DwarfShopkeeper;
 import Level.Player;
 import Level.PlayerListener;
+import Maps.LavaBossLevel;
 import Maps.Level1;
 import Maps.Level2;
 import Maps.TestMap;
@@ -74,7 +75,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     @Override
     public void initialize() {
         // define/setup map
-        this.map = (currentLevel == 1) ? new Level1() : new Level2();
+        this.map = createCurrentMap();
 
         Point spawn = map.getPlayerStartPosition();
         if (WanderingMonk.hasCheckpoint(map.getClass().getSimpleName())) {
@@ -116,6 +117,19 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
     private final ShopMenu shopMenu = new ShopMenu();
     private DwarfShopkeeper dwarf;
+
+    private Map createCurrentMap() {
+        switch (currentLevel) {
+            case 1:
+                return new Level1();
+            case 2:
+                return new Level2();
+            case 3:
+                return new LavaBossLevel();
+            default:
+                throw new IllegalStateException("Unknown level: " + currentLevel);
+        }
+    }
 
     // The stall's shopkeeper, if this level has one. Looked up once per level
     // rather than every frame.
@@ -186,8 +200,14 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                             WanderingMonk.clearCheckpoint();
                             showIntroOnInit = true;
                             initialize();
+                        } else if (currentLevel == 2) {
+                            // Level 2 is complete. Start the Lava Boss level.
+                            currentLevel = 3;
+                            WanderingMonk.clearCheckpoint();
+                            showIntroOnInit = true;
+                            initialize();
                         } else {
-                            // Level 2 is complete. Return to the menu.
+                            // The Lava Boss level is complete. Return to the menu.
                             goBackToMenu();
                         }
                     }

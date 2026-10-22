@@ -5,6 +5,7 @@ import Enemies.MushrumEnemy;
 import Enemies.StoneEnemy;
 import Enemies.VerticalStoneEnemy;
 import EnhancedMapTiles.BouncyPlatform;
+import EnhancedMapTiles.CaveEntrance;
 import EnhancedMapTiles.Coin;
 import EnhancedMapTiles.DisappearingPlatform;
 import EnhancedMapTiles.FallingObject;
@@ -328,6 +329,9 @@ public class Level2 extends Map {
                 new Rectangle(0, 6, 16, 4),
                 3
         ));
+
+        enhancedMapTiles.add(new CaveEntrance(getMapTile(94, 143).getLocation(), 1, 3));
+
         return enhancedMapTiles;
     }
 

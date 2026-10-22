@@ -665,45 +665,21 @@ public abstract class Player extends GameObject {
 
     // other entities can call this to tell the player they beat a level
     public void completeLevel() {
+        if (levelState != LevelState.RUNNING) {
+            return;
+        }
+
         levelState = LevelState.LEVEL_COMPLETED;
+        currentAnimationName = facingDirection == Direction.RIGHT ? "STAND_RIGHT" : "STAND_LEFT";
+        for (PlayerListener listener : listeners) {
+            listener.onLevelCompleted();
+        }
     }
 
     // if player has beaten level, this will be the update cycle
     public void updateLevelCompleted() {
-
-        if (airGroundState != AirGroundState.GROUND &&
-            map.getCamera().containsDraw(this)) {
-
-            currentAnimationName = "FALL_RIGHT";
-
-            applyGravity();
-            increaseMomentum();
-
-            super.update();
-            moveYHandleCollision(moveAmountY);
-        }
-
-        else if (map.getCamera().containsDraw(this)) {
-
-            currentAnimationName = "WALK_RIGHT";
-
-            super.update();
-            float moved = moveXHandleCollision(walkSpeed);
-
-            // if something is blocking the walk-off (like the cave wall), end the level right away
-            if (moved == 0) {
-                for (PlayerListener listener : listeners) {
-                    listener.onLevelCompleted();
-                }
-            }
-        }
-
-        else {
-
-            for (PlayerListener listener : listeners) {
-                listener.onLevelCompleted();
-            }
-        }
+        currentAnimationName = facingDirection == Direction.RIGHT ? "STAND_RIGHT" : "STAND_LEFT";
+        super.update();
     }
 
     // if player has died, this will be the update cycle
