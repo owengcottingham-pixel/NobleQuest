@@ -39,7 +39,7 @@ public class Level1 extends Map {
         super("level1_map.txt", new CommonTileset());
         //this.playerStartPosition = getMapTile(3, 71).getLocation();
 
-        //this.playerStartPosition = getMapTile(175, 25).getLocation();
+        this.playerStartPosition = getMapTile(175, 25).getLocation();
 
         //this.playerStartPosition = getMapTile(200, 45).getLocation();
         this.playerStartPosition = getMapTile(255, 23).getLocation();
@@ -438,6 +438,12 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
                 new Point(stallX + 60, stallGroundY - 46),
                 stallX + 24,        // just inside the left post
                 stallX + 205);      // his greeting spot, just clear of the solid counter
+        // The "press E" prompt floats over the counter rather than over the
+        // dwarf. The counter is the last stall column, and its solid top sits 3
+        // unscaled px down the tile -- 9 on screen at tileScale 3.
+        dwarf.setCounterAnchor(getMapTile(187, 45).getX() + 24,
+                               getMapTile(187, 45).getY() + 9);
+
         npcs.add(dwarf);
 
         return npcs;

@@ -1,6 +1,10 @@
 package NPCs;
 
 import Builders.FrameBuilder;
+import Engine.GraphicsHandler;
+import Engine.Key;
+import Engine.KeyLocker;
+import Engine.Keyboard;
 import Engine.ImageLoader;
 import GameObject.Frame;
 import GameObject.ImageEffect;
@@ -10,6 +14,7 @@ import Level.Player;
 import Utils.Direction;
 import Utils.Point;
 
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -39,6 +44,15 @@ public class DwarfShopkeeper extends NPC {
     private static final float GREET_RANGE_X = 230f;
     private static final float GREET_RANGE_Y = 160f;
 
+    // How near you must stand to actually talk to him. Much tighter than the
+    // greet range -- he waves from across the stall, but you have to walk up to
+    // the counter to trade.
+    private static final float TALK_RANGE_X = 90f;
+    private static final float TALK_RANGE_Y = 80f;
+
+    private static final int PROMPT_SIZE = 22;    // on-screen size of the "E" key
+    private static final int PROMPT_LIFT = 34;    // how far it floats above its anchor
+
     // sprite geometry, measured off DwarfShopkeeper.png
     private static final int CELL_W = 40, CELL_H = 48;
     private static final int BOUND_X = 9, BOUND_Y = 6, BOUND_W = 22, BOUND_H = 40;
@@ -48,6 +62,37 @@ public class DwarfShopkeeper extends NPC {
     private final float walkLeft;
     private final float walkRight;
     private final Random random = new Random();
+
+    private final KeyLocker keyLocker = new KeyLocker();
+    private final Key INTERACT_KEY = Key.E;
+    // draw() has no player, so update() caches whether the prompt should show
+    private boolean canTalk = false;
+    private boolean shopRequested = false;
+    private boolean shopOpen = false;
+    private int pulse = 0;
+
+    // The floating "press E" prompt, drawn by hand rather than as his own sprite.
+    // KeyPromptE.png is a 33x16 two-frame sheet -- key up, key pressed, 1px apart --
+    // so it has to be cut up; drawn whole it squashes both caps into one square.
+    private static final int PROMPT_CELL = 16;
+    private final BufferedImage promptUp   = promptFrame(0);
+    private final BufferedImage promptDown = promptFrame(1);
+
+    private static BufferedImage promptFrame(int index) {
+        BufferedImage sheet = ImageLoader.load("KeyPromptE.png");
+        int x = index * (PROMPT_CELL + 1);
+        if (x + PROMPT_CELL > sheet.getWidth() || PROMPT_CELL > sheet.getHeight()) {
+            return sheet;          // single-frame art: use it as it is
+        }
+        return sheet.getSubimage(x, 0, PROMPT_CELL, PROMPT_CELL);
+    }
+
+    // Where the prompt floats and where "close enough" is measured from: the
+    // counter top, since the counter is what you actually walk up to, not the
+    // dwarf -- he drifts along his side of it. Level1 sets this from the stall's
+    // own tiles. Left unset it falls back to floating over his head.
+    private float counterX = Float.NaN;
+    private float counterY = Float.NaN;
 
     private State state = State.PAUSED;
     private float targetX;
@@ -63,8 +108,52 @@ public class DwarfShopkeeper extends NPC {
         this.targetX = location.x;
     }
 
+    // PlayLevelScreen polls this: true exactly once per press, so one tap of E
+    // opens the menu rather than reopening it every frame the key is held.
+    public boolean consumeShopRequest() {
+        boolean requested = shopRequested;
+        shopRequested = false;
+        return requested;
+    }
+
+    // world position of the middle of the counter top, in pixels
+    public void setCounterAnchor(float centerX, float topY) {
+        this.counterX = centerX;
+        this.counterY = topY;
+    }
+
+    private boolean hasCounter() {
+        return !Float.isNaN(counterX) && !Float.isNaN(counterY);
+    }
+
+    // the screen tells him the menu is up, so he stops wandering off mid-sale
+    public void setShopOpen(boolean shopOpen) {
+        this.shopOpen = shopOpen;
+    }
+
     @Override
     public void update(Player player) {
+        pulse++;
+        canTalk = playerCanTalk(player);
+
+        if (Keyboard.isKeyUp(INTERACT_KEY)) {
+            keyLocker.unlockKey(INTERACT_KEY);
+        }
+        if (canTalk && !shopOpen
+                && Keyboard.isKeyDown(INTERACT_KEY)
+                && !keyLocker.isKeyLocked(INTERACT_KEY)) {
+            keyLocker.lockKey(INTERACT_KEY);
+            shopRequested = true;
+        }
+
+        if (shopOpen) {
+            // hold still and face the customer while trading
+            facing = (player.getX() < getX()) ? Direction.LEFT : Direction.RIGHT;
+            currentAnimationName = animationFor();
+            super.update(player);
+            return;
+        }
+
         if (playerIsHere(player)) {
             if (state != State.GREETING && state != State.RUNNING) {
                 state = State.RUNNING;
@@ -129,6 +218,39 @@ public class DwarfShopkeeper extends NPC {
         float shopCentre = (walkLeft + walkRight) / 2f + CELL_W / 2f;
         return Math.abs(player.getX() - shopCentre) <= GREET_RANGE_X
             && Math.abs(player.getY() - getY()) <= GREET_RANGE_Y;
+    }
+
+    private boolean playerCanTalk(Player player) {
+        float anchorX = hasCounter() ? counterX : getX() + CELL_W / 2f;
+        return Math.abs((player.getX() + 56f) - anchorX) <= TALK_RANGE_X
+            && Math.abs(player.getY() - getY()) <= TALK_RANGE_Y;
+    }
+
+    @Override
+    public void draw(GraphicsHandler graphicsHandler) {
+        super.draw(graphicsHandler);
+
+        // only prompt when you are close enough and the menu is not already up
+        if (!canTalk || shopOpen) {
+            return;
+        }
+        int bob = (pulse / 24) % 2;            // gentle bob
+        int px, py;
+        if (hasCounter()) {
+            // The counter is a map tile, so it has no calibrated position of its
+            // own. His does, and the difference between his world x and his
+            // calibrated x is exactly the camera offset, so it converts any world
+            // point on this map into screen space.
+            float cameraX = getX() - getCalibratedXLocation();
+            float cameraY = getY() - getCalibratedYLocation();
+            px = Math.round(counterX - cameraX) - PROMPT_SIZE / 2;
+            py = Math.round(counterY - cameraY) - PROMPT_LIFT - bob;
+        } else {
+            px = Math.round(getCalibratedXLocation()) + CELL_W / 2 - PROMPT_SIZE / 2;
+            py = Math.round(getCalibratedYLocation()) - PROMPT_LIFT - bob;
+        }
+        BufferedImage cap = Keyboard.isKeyDown(INTERACT_KEY) ? promptDown : promptUp;
+        graphicsHandler.drawImage(cap, px, py, PROMPT_SIZE, PROMPT_SIZE);
     }
 
     private String animationFor() {

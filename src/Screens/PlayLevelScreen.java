@@ -1,14 +1,7 @@
 package Screens;
 
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics2D;
 import Engine.Config;
-import Engine.Key;
-import Engine.KeyLocker;
-import Engine.Keyboard;
-import Engine.ScreenManager;
 import java.awt.image.BufferedImage;
 
 import Engine.GraphicsHandler;
@@ -18,6 +11,8 @@ import Game.GameState;
 import Game.ScreenCoordinator;
 import GameObject.SpriteSheet;
 import Level.Map;
+import Level.NPC;
+import NPCs.DwarfShopkeeper;
 import Level.Player;
 import Level.PlayerListener;
 import Maps.Level1;
@@ -29,19 +24,7 @@ import Utils.NumberDisplay;
 
 public class PlayLevelScreen extends Screen implements PlayerListener {
 
-    // level-complete transition: fade the level to black, then hold on a "Level Cleared" card
-    private static final int FADE_OUT_TIME = 60;
-    private static final int LEVEL_TRANSITION_TIME = 180;
-    // level intro: hold on a "Level N" title card, then fade into the new level
-    private static final int INTRO_HOLD_TIME = 90;
-    private static final int INTRO_FADE_TIME = 60;
-
-    // pause menu
-    private static final String[] PAUSE_OPTIONS = { "Resume", "Restart Level", "Main Menu" };
-    private int pauseSelection = 0;
-    private final KeyLocker keyLocker = new KeyLocker();
-    private boolean showIntroOnInit = false;
-    private int introTimer;
+    private static final int LEVEL_TRANSITION_TIME = 120;
 
     protected ScreenCoordinator screenCoordinator;
     protected int currentLevel = 1;
@@ -70,7 +53,8 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     @Override
     public void initialize() {
         // define/setup map
-        this.map = (currentLevel == 1) ? new Level1() : new Level2();
+        this.map = new Level1();
+        //this.map = new Level2();
 
         // Set up the player at the current level's starting position.
         player = new Knight(
@@ -93,18 +77,27 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         levelClearedScreen = new LevelClearedScreen();
         levelLoseScreen = new LevelLoseScreen(this);
 
+        dwarf = findDwarf();          // null on levels without a stall
+        shopMenu.close();             // never carry an open menu across a reload
+
         // Start the level.
+        playLevelScreenState = PlayLevelScreenState.RUNNING;
         levelCompletedStateChangeStart = false;
         screenTimer = 0;
-        pauseSelection = 0;
+    }
 
-        if (showIntroOnInit) {
-            playLevelScreenState = PlayLevelScreenState.LEVEL_INTRO;
-            introTimer = INTRO_HOLD_TIME + INTRO_FADE_TIME;
-            showIntroOnInit = false;
-        } else {
-            playLevelScreenState = PlayLevelScreenState.RUNNING;
+    private final ShopMenu shopMenu = new ShopMenu();
+    private DwarfShopkeeper dwarf;
+
+    // The stall's shopkeeper, if this level has one. Looked up once per level
+    // rather than every frame.
+    private DwarfShopkeeper findDwarf() {
+        for (NPC npc : map.getNPCs()) {
+            if (npc instanceof DwarfShopkeeper) {
+                return (DwarfShopkeeper) npc;
+            }
         }
+        return null;
     }
 
     @Override
@@ -112,23 +105,22 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         switch (playLevelScreenState) {
 
             case RUNNING:
-                updateKeyLocks();
-                if (Keyboard.isKeyDown(Key.ESC) && !keyLocker.isKeyLocked(Key.ESC)) {
-                    openPauseMenu();
+                if (shopMenu.isOpen()) {
+                    // the world is frozen while trading -- no player, no map, so
+                    // you cannot walk off and leave the menu hanging in mid air
+                    shopMenu.update(player);
+                    if (dwarf != null) {
+                        dwarf.setShopOpen(shopMenu.isOpen());
+                    }
                     break;
                 }
+
                 player.update();
                 map.update(player);
-                break;
 
-            case PAUSED:
-                updatePauseMenu();
-                break;
-
-            case LEVEL_INTRO:
-                introTimer--;
-                if (introTimer <= 0) {
-                    playLevelScreenState = PlayLevelScreenState.RUNNING;
+                if (dwarf != null && dwarf.consumeShopRequest()) {
+                    shopMenu.open();
+                    dwarf.setShopOpen(true);
                 }
                 break;
 
@@ -144,7 +136,6 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                         if (currentLevel == 1) {
                             // Level 1 is complete. Start Level 2.
                             currentLevel = 2;
-                            showIntroOnInit = true;
                             initialize();
                         } else {
                             // Level 2 is complete. Return to the menu.
@@ -170,185 +161,17 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                 drawCoinCounter(graphicsHandler);
                 drawDashBar(graphicsHandler);
                 drawHealthBar(graphicsHandler);
-                break;
-
-            case PAUSED:
-                map.draw(graphicsHandler);
-                player.draw(graphicsHandler);
-                drawCoinCounter(graphicsHandler);
-                drawDashBar(graphicsHandler);
-                drawHealthBar(graphicsHandler);
-                drawPauseMenu(graphicsHandler);
-                break;
-
-            case LEVEL_INTRO:
-                drawLevelIntro(graphicsHandler);
+                shopMenu.draw(graphicsHandler, player);
                 break;
 
             case LEVEL_COMPLETED:
-                drawLevelCompleted(graphicsHandler);
+                levelClearedScreen.draw(graphicsHandler);
                 break;
 
             case LEVEL_LOSE:
                 levelLoseScreen.draw(graphicsHandler);
                 break;
         }
-    }
-
-    // ---------- pause menu ----------
-
-    private void updateKeyLocks() {
-        if (Keyboard.isKeyUp(Key.ESC)) keyLocker.unlockKey(Key.ESC);
-        if (Keyboard.isKeyUp(Key.ENTER)) keyLocker.unlockKey(Key.ENTER);
-        if (Keyboard.isKeyUp(Key.UP)) keyLocker.unlockKey(Key.UP);
-        if (Keyboard.isKeyUp(Key.DOWN)) keyLocker.unlockKey(Key.DOWN);
-        if (Keyboard.isKeyUp(Key.W)) keyLocker.unlockKey(Key.W);
-        if (Keyboard.isKeyUp(Key.S)) keyLocker.unlockKey(Key.S);
-    }
-
-    private void openPauseMenu() {
-        playLevelScreenState = PlayLevelScreenState.PAUSED;
-        pauseSelection = 0;
-        // lock so the keys that are still held down don't trigger menu actions instantly
-        keyLocker.lockKey(Key.ESC);
-        keyLocker.lockKey(Key.ENTER);
-        keyLocker.lockKey(Key.UP);
-        keyLocker.lockKey(Key.DOWN);
-        keyLocker.lockKey(Key.W);
-        keyLocker.lockKey(Key.S);
-    }
-
-    private void resumeFromPause() {
-        playLevelScreenState = PlayLevelScreenState.RUNNING;
-        // keep ESC locked until released so it doesn't immediately re-open the menu
-        keyLocker.lockKey(Key.ESC);
-    }
-
-    private void updatePauseMenu() {
-        updateKeyLocks();
-
-        boolean up = (Keyboard.isKeyDown(Key.UP) && !keyLocker.isKeyLocked(Key.UP))
-                  || (Keyboard.isKeyDown(Key.W) && !keyLocker.isKeyLocked(Key.W));
-        boolean down = (Keyboard.isKeyDown(Key.DOWN) && !keyLocker.isKeyLocked(Key.DOWN))
-                    || (Keyboard.isKeyDown(Key.S) && !keyLocker.isKeyLocked(Key.S));
-
-        if (up) {
-            pauseSelection = (pauseSelection + PAUSE_OPTIONS.length - 1) % PAUSE_OPTIONS.length;
-            keyLocker.lockKey(Key.UP);
-            keyLocker.lockKey(Key.W);
-        } else if (down) {
-            pauseSelection = (pauseSelection + 1) % PAUSE_OPTIONS.length;
-            keyLocker.lockKey(Key.DOWN);
-            keyLocker.lockKey(Key.S);
-        }
-
-        if (Keyboard.isKeyDown(Key.ESC) && !keyLocker.isKeyLocked(Key.ESC)) {
-            resumeFromPause();
-        } else if (Keyboard.isKeyDown(Key.ENTER) && !keyLocker.isKeyLocked(Key.ENTER)) {
-            keyLocker.lockKey(Key.ENTER);
-            switch (pauseSelection) {
-                case 0:
-                    resumeFromPause();
-                    break;
-                case 1:
-                    resetLevel();
-                    break;
-                case 2:
-                    goBackToMenu();
-                    break;
-            }
-        }
-    }
-
-    private void drawPauseMenu(GraphicsHandler graphicsHandler) {
-        int w = ScreenManager.getScreenWidth();
-        int h = ScreenManager.getScreenHeight();
-
-        // dim the frozen game
-        graphicsHandler.drawFilledRectangle(0, 0, w, h, new Color(0, 0, 0, 170));
-
-        // panel
-        int panelW = 420;
-        int panelH = 330;
-        int panelX = (w - panelW) / 2;
-        int panelY = (h - panelH) / 2;
-        graphicsHandler.drawFilledRectangleWithBorder(
-            panelX, panelY, panelW, panelH,
-            new Color(25, 25, 35, 235), Color.white, 3
-        );
-
-        drawCenteredText(graphicsHandler, "PAUSED", panelY + 30,
-            new Font("Arial", Font.BOLD, 44), Color.white);
-
-        Font optionFont = new Font("Arial", Font.PLAIN, 28);
-        int optionY = panelY + 120;
-        for (int i = 0; i < PAUSE_OPTIONS.length; i++) {
-            boolean selected = (i == pauseSelection);
-            String label = selected ? "> " + PAUSE_OPTIONS[i] + " <" : PAUSE_OPTIONS[i];
-            drawCenteredText(graphicsHandler, label, optionY + i * 50, optionFont,
-                selected ? new Color(255, 215, 80) : new Color(200, 200, 200));
-        }
-
-        drawCenteredText(graphicsHandler, "Up/Down to select   Enter to confirm   Esc to resume",
-            panelY + panelH - 40, new Font("Arial", Font.PLAIN, 14), new Color(170, 170, 170));
-    }
-
-    // ---------- level transition ----------
-
-    private void drawLevelCompleted(GraphicsHandler graphicsHandler) {
-        int w = ScreenManager.getScreenWidth();
-        int h = ScreenManager.getScreenHeight();
-        int elapsed = LEVEL_TRANSITION_TIME - screenTimer;
-
-        if (elapsed < FADE_OUT_TIME) {
-            // keep showing the finished level while it fades to black
-            map.draw(graphicsHandler);
-            player.draw(graphicsHandler);
-            int alpha = Math.min(255, elapsed * 255 / FADE_OUT_TIME);
-            graphicsHandler.drawFilledRectangle(0, 0, w, h, new Color(0, 0, 0, alpha));
-        } else {
-            graphicsHandler.drawFilledRectangle(0, 0, w, h, Color.black);
-
-            // fade the text in over the first half second of the black screen
-            int textAlpha = Math.min(255, (elapsed - FADE_OUT_TIME) * 255 / 30);
-            drawCenteredText(graphicsHandler, "Level " + currentLevel + " Cleared!", h / 2 - 40,
-                new Font("Arial", Font.BOLD, 44), new Color(255, 255, 255, textAlpha));
-            if (currentLevel == 1) {
-                drawCenteredText(graphicsHandler, "Get ready for Level 2...", h / 2 + 30,
-                    new Font("Arial", Font.PLAIN, 22), new Color(200, 200, 200, textAlpha));
-            }
-        }
-    }
-
-    private void drawLevelIntro(GraphicsHandler graphicsHandler) {
-        int w = ScreenManager.getScreenWidth();
-        int h = ScreenManager.getScreenHeight();
-
-        // the new level is already loaded underneath the title card
-        map.draw(graphicsHandler);
-        player.draw(graphicsHandler);
-        drawCoinCounter(graphicsHandler);
-        drawDashBar(graphicsHandler);
-        drawHealthBar(graphicsHandler);
-
-        int elapsed = INTRO_HOLD_TIME + INTRO_FADE_TIME - introTimer;
-        int alpha = 255;
-        if (elapsed > INTRO_HOLD_TIME) {
-            alpha = 255 - (elapsed - INTRO_HOLD_TIME) * 255 / INTRO_FADE_TIME;
-        }
-        alpha = Math.max(0, Math.min(255, alpha));
-
-        graphicsHandler.drawFilledRectangle(0, 0, w, h, new Color(0, 0, 0, alpha));
-        drawCenteredText(graphicsHandler, "Level " + currentLevel, h / 2 - 30,
-            new Font("Arial", Font.BOLD, 56), new Color(255, 255, 255, alpha));
-    }
-
-    // draws text horizontally centered on the screen; y is the top of the text
-    private void drawCenteredText(GraphicsHandler graphicsHandler, String text, int y, Font font, Color color) {
-        Graphics2D g = graphicsHandler.getGraphics();
-        FontMetrics fm = g.getFontMetrics(font);
-        int x = (ScreenManager.getScreenWidth() - fm.stringWidth(text)) / 2;
-        graphicsHandler.drawString(text, x, y + fm.getAscent(), font, color);
     }
 
     public PlayLevelScreenState getPlayLevelScreenState() {
@@ -471,8 +294,6 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
     private enum PlayLevelScreenState {
         RUNNING,
-        PAUSED,
-        LEVEL_INTRO,
         LEVEL_COMPLETED,
         LEVEL_LOSE
     }
