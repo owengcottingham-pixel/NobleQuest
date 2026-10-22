@@ -1,4 +1,4 @@
-
+ 
 package Screens;
 
 import Engine.*;
@@ -18,6 +18,7 @@ public class MenuScreen extends Screen {
     protected int menuItemSelected = -1;
 
     protected SpriteFont playGame;
+    protected SpriteFont settings;
     protected SpriteFont credits;
     protected Map background;
 
@@ -51,8 +52,15 @@ public class MenuScreen extends Screen {
         playGame.setOutlineColor(Color.black);
         playGame.setOutlineThickness(3);
 
+        settings = new SpriteFont(
+            "SETTINGS", 200, 223,
+            "Arial", 30, new Color(49, 207, 240)
+        );
+        settings.setOutlineColor(Color.black);
+        settings.setOutlineThickness(3);
+
         credits = new SpriteFont(
-            "CREDITS", 200, 223,
+            "CREDITS", 200, 323,
             "Arial", 30, new Color(49, 207, 240)
         );
         credits.setOutlineColor(Color.black);
@@ -89,29 +97,39 @@ public class MenuScreen extends Screen {
             }
         }
 
-        // Loop menu selection
-        if (currentMenuItemHovered > 1) {
+        // Loop through all three menu options
+        if (currentMenuItemHovered > 2) {
             currentMenuItemHovered = 0;
         } else if (currentMenuItemHovered < 0) {
-            currentMenuItemHovered = 1;
+            currentMenuItemHovered = 2;
         }
+
+        // Default colors
+        playGame.setColor(new Color(49, 207, 240));
+        settings.setColor(new Color(49, 207, 240));
+        credits.setColor(new Color(49, 207, 240));
 
         // Highlight selected menu option
         if (currentMenuItemHovered == 0) {
 
             playGame.setColor(new Color(255, 215, 0));
-            credits.setColor(new Color(49, 207, 240));
 
             pointerLocationX = 170;
             pointerLocationY = 130;
 
         } else if (currentMenuItemHovered == 1) {
 
-            playGame.setColor(new Color(49, 207, 240));
-            credits.setColor(new Color(255, 215, 0));
+            settings.setColor(new Color(255, 215, 0));
 
             pointerLocationX = 170;
             pointerLocationY = 230;
+
+        } else if (currentMenuItemHovered == 2) {
+
+            credits.setColor(new Color(255, 215, 0));
+
+            pointerLocationX = 170;
+            pointerLocationY = 330;
         }
 
         // Unlock space when released
@@ -123,13 +141,18 @@ public class MenuScreen extends Screen {
         if (!keyLocker.isKeyLocked(Key.SPACE)
                 && Keyboard.isKeyDown(Key.SPACE)) {
 
+            keyLocker.lockKey(Key.SPACE);
             menuItemSelected = currentMenuItemHovered;
 
             if (menuItemSelected == 0) {
+                // Start the game
                 screenCoordinator.setGameState(GameState.LEVEL);
 
             } else if (menuItemSelected == 1) {
-                screenCoordinator.setGameState(GameState.CREDITS);
+                // SETTINGS - Not implemented yet
+
+            } else if (menuItemSelected == 2) {
+                // CREDITS - Not implemented yet
             }
         }
     }
@@ -153,6 +176,7 @@ public class MenuScreen extends Screen {
 
         // Draw menu buttons
         playGame.draw(graphicsHandler);
+        settings.draw(graphicsHandler);
         credits.draw(graphicsHandler);
 
         // Draw blue selection square
