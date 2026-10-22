@@ -37,12 +37,12 @@ public class Level1 extends Map {
 
     public Level1() {
         super("level1_map.txt", new CommonTileset());
-        //this.playerStartPosition = getMapTile(3, 71).getLocation();
+        this.playerStartPosition = getMapTile(3, 71).getLocation();
 
-        this.playerStartPosition = getMapTile(175, 25).getLocation();
+        //this.playerStartPosition = getMapTile(175, 25).getLocation();
 
         //this.playerStartPosition = getMapTile(200, 45).getLocation();
-        this.playerStartPosition = getMapTile(255, 23).getLocation();
+        //this.playerStartPosition = getMapTile(305, 23).getLocation();
 
         this.background = ImageLoader.load("Background.png");
     }
