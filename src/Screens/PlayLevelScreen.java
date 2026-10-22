@@ -116,8 +116,26 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         }
     }
 
-    private final ShopMenu shopMenu = new ShopMenu();
-    private DwarfShopkeeper dwarf;
+    private boolean showControls = true;
+    private boolean hWasDown = false;
+
+    private static final String[][] CONTROLS = {
+            { "A / D", "Move" },
+            { "W", "Jump" },
+            { "S", "Crouch" },
+            { "J", "Sword" },
+            { "Left Click", "Crossbow (aim with mouse)" },
+            { "Shift", "Dash" },
+            { "Space", "Talk" },
+            { "E", "Shop / Wishing Well" },
+            { "Esc", "Pause" },
+            { "H", "Hide controls" }
+    };
+    private static final Font CONTROLS_TITLE_FONT = new Font("Serif", Font.BOLD, 13);
+    private static final Font CONTROLS_FONT = new Font("Arial", Font.BOLD, 11);
+
+        private final ShopMenu shopMenu = new ShopMenu();
+        private DwarfShopkeeper dwarf;
 
     private Map createCurrentMap() {
         switch (currentLevel) {
@@ -149,6 +167,14 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
             case RUNNING:
                 updateKeyLocks();
+                if (Keyboard.isKeyDown(Key.H)) {
+                    if (!hWasDown) {
+                        showControls = !showControls;
+                    }
+                    hWasDown = true;
+                } else {
+                    hWasDown = false;
+                }
 
                 if (shopMenu.isOpen()) {
                     // the world is frozen while trading -- no player, no map, so
@@ -231,6 +257,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                 drawCoinCounter(graphicsHandler);
                 drawDashBar(graphicsHandler);
                 drawHealthBar(graphicsHandler);
+                drawControls(graphicsHandler);
                 shopMenu.draw(graphicsHandler, player);
                 break;
 
@@ -240,6 +267,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                 drawCoinCounter(graphicsHandler);
                 drawDashBar(graphicsHandler);
                 drawHealthBar(graphicsHandler);
+                drawControls(graphicsHandler);
                 drawPauseMenu(graphicsHandler);
                 break;
 
@@ -503,6 +531,28 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         graphicsHandler.drawRectangle(
             x, y, width, height, Color.white, 2
         );
+    }
+
+    private void drawControls(GraphicsHandler graphicsHandler) {
+    if (!showControls) {
+        return;
+    }
+    int x = 20;
+    int y = 68;
+    int rowHeight = 14;
+    int keyColumn = 68;
+    int width = 165;
+    int height = 26 + CONTROLS.length * rowHeight;
+
+    graphicsHandler.drawFilledRectangle(x, y, width, height, new Color(30, 24, 49, 200));
+    graphicsHandler.drawRectangle(x, y, width, height, new Color(214, 170, 92), 2);
+    graphicsHandler.drawString("CONTROLS", x + 8, y + 16, CONTROLS_TITLE_FONT, new Color(214, 170, 92));
+
+    for (int i = 0; i < CONTROLS.length; i++) {
+        int rowY = y + 32 + i * rowHeight;
+        graphicsHandler.drawString(CONTROLS[i][0], x + 8, rowY, CONTROLS_FONT, new Color(255, 214, 120));
+        graphicsHandler.drawString(CONTROLS[i][1], x + 8 + keyColumn, rowY, CONTROLS_FONT, new Color(251, 230, 160));
+    }
     }
 
     @Override
