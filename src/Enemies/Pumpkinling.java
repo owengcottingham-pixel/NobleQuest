@@ -46,6 +46,13 @@ public class Pumpkinling extends Enemy {
     }
 
     @Override
+    public boolean hitByBolt(Player player) {
+        player.addCoins(1);
+        pop();
+        return true;
+    }
+
+    @Override
     public void update(Player player) {
         // one sword hit and he's done
         if (player.isAttacking() && inSwordRange(player)) {

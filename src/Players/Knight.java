@@ -3,6 +3,7 @@ package Players;
 import Builders.FrameBuilder;
 import Engine.GraphicsHandler;
 import Engine.ImageLoader;
+import Engine.Mouse;
 import GameObject.Frame;
 import GameObject.ImageEffect;
 import GameObject.SpriteSheet;
@@ -10,7 +11,9 @@ import Level.LevelState;
 import Level.Player;
 import Utils.Direction;
 
+
 import java.util.HashMap;
+import java.util.ArrayList;
 
 public class Knight extends Player {
 
@@ -42,7 +45,81 @@ public class Knight extends Player {
         momentumYIncrease = .5f;
     }
     
-    
+        // CROSSBOW 
+    private static final int SHOOT_TIME = 26;      // the SHOOT animation
+    private static final int RELEASE_AT = 18;      // bolt flies on frame 1 of SHOOT, after 8 frames of aiming
+    private static final float BOLT_SPEED = 16f;
+    private int shootTimer = 0;
+    private Direction aimSide = Direction.RIGHT;
+    private final ArrayList<CrossbowBolt> bolts = new ArrayList<>();
+
+    @Override
+    public void update() {
+        if (levelState == LevelState.RUNNING) {
+            if (playerState == Player.PlayerState.DASHING || isAttacking()) {
+                shootTimer = 0;                    // dashing or the sword cancels a shot
+            } else if (shootTimer == 0 && Mouse.isLeftDown()) {
+                shootTimer = SHOOT_TIME;           // holding the button keeps firing
+            }
+            if (shootTimer > 0) {
+                aimSide = mouseMapX() < getBounds().getX1() + getBounds().getWidth() / 2f ? Direction.LEFT : Direction.RIGHT;
+                if (shootTimer == RELEASE_AT) {
+                    fireBolt();
+                }
+                shootTimer--;
+            }
+        }
+
+        super.update();
+
+        for (int i = bolts.size() - 1; i >= 0; i--) {
+            bolts.get(i).update(map, this);
+            if (bolts.get(i).isDone()) {
+                bolts.remove(i);
+            }
+        }
+    }
+
+    private void fireBolt() {
+        // the crossbow tip in the SHOOT frames (mirrored when facing left)
+        float tipX = getX() + (aimSide == Direction.RIGHT ? 86 : 26);
+        float tipY = getY() + 41;
+        float dx = mouseMapX() - tipX;
+        float dy = mouseMapY() - tipY;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        if (length < 1) {
+            dx = aimSide == Direction.RIGHT ? 1 : -1;
+            dy = 0;
+            length = 1;
+        }
+        bolts.add(new CrossbowBolt(tipX, tipY, dx / length * BOLT_SPEED, dy / length * BOLT_SPEED));
+    }
+
+    // the mouse is in screen pixels, so add the camera to get the spot on the map
+    private float mouseMapX() {
+        return Mouse.getX() + map.getCamera().getX();
+    }
+
+    private float mouseMapY() {
+        return Mouse.getY() + map.getCamera().getY();
+    }
+
+    @Override
+    protected void handlePlayerAnimation() {
+        super.handlePlayerAnimation();
+        if (shootTimer > 0) {
+            facingDirection = aimSide;             // face where you're aiming
+            currentAnimationName = aimSide == Direction.RIGHT ? "SHOOT_RIGHT" : "SHOOT_LEFT";
+        }
+    }
+
+    @Override
+    public void draw(GraphicsHandler graphicsHandler) {
+        super.draw(graphicsHandler);
+        for (CrossbowBolt bolt : bolts) {
+            bolt.draw(graphicsHandler, map);
+        }
+    }
 
     @Override
     public int getHat() {

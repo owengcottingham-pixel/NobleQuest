@@ -184,16 +184,8 @@ public class Gourdzilla extends Enemy {
         }
 
         // sword hits only land while he's dizzy
-        if (state == State.DIZZY && hitCooldown == 0 && player.isAttacking() && inSwordRange(player)) {
-            health--;
-            hitCooldown = 30;
-            if (health <= 0) {
-                player.addCoins(25);
-                clearArena();
-                startState(State.DYING, 6 * 12);
-            } else {
-                startState(State.HURT, 22);
-            }
+        if (player.isAttacking() && inSwordRange(player)) {
+            takeHit(player);
         }
 
         velocityY = Math.min(velocityY + gravity, terminalVelocity);
@@ -202,6 +194,27 @@ public class Gourdzilla extends Enemy {
 
         currentAnimationName = animationFor();
         super.update(player);
+    }
+
+    private void takeHit(Player player) {
+        if (state != State.DIZZY || hitCooldown > 0) {
+            return;
+        }
+        health--;
+        hitCooldown = 30;
+        if (health <= 0) {
+            player.addCoins(25);
+            clearArena();
+            startState(State.DYING, 6 * 12);
+        } else {
+            startState(State.HURT, 22);
+        }
+    }
+
+    @Override
+    public boolean hitByBolt(Player player) {
+        takeHit(player);
+        return true;
     }
 
     private void nextAttack(Player player) {

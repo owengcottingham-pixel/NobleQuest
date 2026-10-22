@@ -27,6 +27,8 @@ import Maps.Level2;
 import Maps.TestMap;
 import Maps.Level1;
 import Players.Knight;
+import NPCs.WanderingMonk;
+import Utils.Point;
 import Utils.NumberDisplay;
 
 public class PlayLevelScreen extends Screen implements PlayerListener {
@@ -74,11 +76,11 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         // define/setup map
         this.map = (currentLevel == 1) ? new Level1() : new Level2();
 
-        // Set up the player at the current level's starting position.
-        player = new Knight(
-            map.getPlayerStartPosition().x,
-            map.getPlayerStartPosition().y
-        );
+        Point spawn = map.getPlayerStartPosition();
+        if (WanderingMonk.hasCheckpoint(map.getClass().getSimpleName())) {
+            spawn = WanderingMonk.getCheckpoint();
+        }
+        player = new Knight(spawn.x, spawn.y);
 
         player.setMap(map);
         player.addListener(this);
@@ -181,6 +183,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                         if (currentLevel == 1) {
                             // Level 1 is complete. Start Level 2.
                             currentLevel = 2;
+                            WanderingMonk.clearCheckpoint();
                             showIntroOnInit = true;
                             initialize();
                         } else {
@@ -287,6 +290,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                     resumeFromPause();
                     break;
                 case 1:
+                    WanderingMonk.clearCheckpoint();
                     resetLevel();
                     break;
                 case 2:
@@ -501,6 +505,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     }
 
     public void goBackToMenu() {
+        WanderingMonk.clearCheckpoint();
         screenCoordinator.setGameState(GameState.MENU);
     }
 

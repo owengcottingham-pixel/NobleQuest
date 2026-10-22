@@ -44,4 +44,8 @@ public class Enemy extends MapEntity {
     public void touchedPlayer(Player player) {
         player.hurtPlayer(this);
     }
+
+    public boolean hitByBolt(Player player) {
+        return false;
+    }
 }

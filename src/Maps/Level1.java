@@ -15,6 +15,7 @@ import EnhancedMapTiles.BouncyPlatform;
 import EnhancedMapTiles.SuperBouncyPlatform;
 import GameObject.Rectangle;
 import Level.*;
+import NPCs.WanderingMonk;
 import NPCs.DwarfShopkeeper;
 import NPCs.Walrus;
 import Tilesets.CommonTileset;
@@ -426,12 +427,19 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
     public ArrayList<NPC> loadNPCs() {
         ArrayList<NPC> npcs = new ArrayList<>();
 
-        Walrus walrus = new Walrus(getMapTile(12, 71).getLocation().subtractY(13));
-        npcs.add(walrus);
 
-        // cosmetics stall shopkeeper. The stall is cols 182-187, rows 43-45, and
-        // the ground it rests on is row 46. 46 is the gap from the top of his
-        // 48px cell down to the sole of his boots, so this stands him on it.
+        WanderingMonk monk = new WanderingMonk(getMapTile(12, 71).getLocation().subtractY(58), "Many paths lie ahead, \nyoung knight. Do not fear, \nyou will always come \nback to me when you fail.");
+        npcs.add(monk);
+
+        WanderingMonk monk2 = new WanderingMonk(getMapTile(118, 35).getLocation().subtractY(58), "The stones ahead crumble \nbeneath slow feet. \nDo not linger, young knight.");
+        npcs.add(monk2);
+
+        WanderingMonk monk3 = new WanderingMonk(getMapTile(197, 45).getLocation().subtractY(58), "Have you met our shopkeeper? \nHe's got the finest hats \nin all the Noble Land.");
+        npcs.add(monk3);
+
+        WanderingMonk monk4 = new WanderingMonk(getMapTile(258, 23).getLocation().subtractY(58), "Beyond these gates waits \nthe Gourd King himself. \nFew who enter walk out.");
+        npcs.add(monk4);
+
         float stallX = getMapTile(182, 43).getX();
         float stallGroundY = getMapTile(182, 46).getY();
         DwarfShopkeeper dwarf = new DwarfShopkeeper(

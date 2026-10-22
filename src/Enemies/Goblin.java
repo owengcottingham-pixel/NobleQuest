@@ -90,6 +90,12 @@ public class Goblin extends Enemy {
             : (dx < 20 && dx > -swordReach);
     }
 
+    @Override
+    public boolean hitByBolt(Player player) {
+        takeHit(player);
+        return true;
+    }
+
     protected void takeHit(Player player) {
         health--;
         hurtTimer = hurtDuration;
