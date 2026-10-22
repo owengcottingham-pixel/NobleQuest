@@ -247,6 +247,10 @@ public abstract class Player extends GameObject {
 
             checkSpikeTiles();
 
+            if (map != null && getBounds().getY1() > map.getEndBoundY()) {
+                levelState = LevelState.PLAYER_DEAD;
+            }
+
             handlePlayerAnimation();
 
             updateLockedKeys();
