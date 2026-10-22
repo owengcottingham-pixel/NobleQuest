@@ -534,25 +534,38 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     }
 
     private void drawControls(GraphicsHandler graphicsHandler) {
-    if (!showControls) {
-        return;
-    }
-    int x = 20;
-    int y = 68;
-    int rowHeight = 14;
-    int keyColumn = 68;
-    int width = 165;
-    int height = 26 + CONTROLS.length * rowHeight;
+        if (!showControls) {
+            return;
+        }
+        FontMetrics keyMetrics = graphicsHandler.getGraphics().getFontMetrics(CONTROLS_FONT);
+        FontMetrics titleMetrics = graphicsHandler.getGraphics().getFontMetrics(CONTROLS_TITLE_FONT);
 
-    graphicsHandler.drawFilledRectangle(x, y, width, height, new Color(30, 24, 49, 200));
-    graphicsHandler.drawRectangle(x, y, width, height, new Color(214, 170, 92), 2);
-    graphicsHandler.drawString("CONTROLS", x + 8, y + 16, CONTROLS_TITLE_FONT, new Color(214, 170, 92));
+        int keyColumn = 0;
+        int actionWidth = 0;
+        for (String[] control : CONTROLS) {
+            keyColumn = Math.max(keyColumn, keyMetrics.stringWidth(control[0]));
+            actionWidth = Math.max(actionWidth, keyMetrics.stringWidth(control[1]));
+        }
+        keyColumn += 14;
 
-    for (int i = 0; i < CONTROLS.length; i++) {
-        int rowY = y + 32 + i * rowHeight;
-        graphicsHandler.drawString(CONTROLS[i][0], x + 8, rowY, CONTROLS_FONT, new Color(255, 214, 120));
-        graphicsHandler.drawString(CONTROLS[i][1], x + 8 + keyColumn, rowY, CONTROLS_FONT, new Color(251, 230, 160));
-    }
+        int padding = 8;
+        int rowHeight = keyMetrics.getHeight();
+        int titleHeight = titleMetrics.getHeight();
+        int width = Math.max(padding * 2 + keyColumn + actionWidth, padding * 2 + titleMetrics.stringWidth("CONTROLS"));
+        int height = padding * 2 + titleHeight + 4 + CONTROLS.length * rowHeight;
+
+        int x = 20;
+        int y = 68;
+
+        graphicsHandler.drawFilledRectangle(x, y, width, height, new Color(30, 24, 49, 200));
+        graphicsHandler.drawRectangle(x, y, width, height, new Color(214, 170, 92), 2);
+        graphicsHandler.drawString("CONTROLS", x + padding, y + padding + titleMetrics.getAscent(), CONTROLS_TITLE_FONT, new Color(214, 170, 92));
+
+        for (int i = 0; i < CONTROLS.length; i++) {
+            int rowY = y + padding + titleHeight + 4 + i * rowHeight + keyMetrics.getAscent();
+            graphicsHandler.drawString(CONTROLS[i][0], x + padding, rowY, CONTROLS_FONT, new Color(255, 214, 120));
+            graphicsHandler.drawString(CONTROLS[i][1], x + padding + keyColumn, rowY, CONTROLS_FONT, new Color(251, 230, 160));
+        }
     }
 
     @Override
