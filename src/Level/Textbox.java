@@ -105,7 +105,7 @@ public class Textbox {
     private int getLongestTextWidth(String[] lines, Graphics2D graphics) {
         int longestTextWidth = 0;
         for (String line : lines) {
-            int textWidth = graphics.getFontMetrics().stringWidth(line);
+            int textWidth = graphics.getFontMetrics(spriteFont.getFont()).stringWidth(line);
             if (textWidth > longestTextWidth) {
                 longestTextWidth = textWidth;
             }

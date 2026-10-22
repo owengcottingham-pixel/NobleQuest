@@ -9,6 +9,8 @@ import Level.Player;
 import Utils.Point;
 
 import java.util.HashMap;
+import java.awt.Color;
+import java.awt.Font;
 
 public class WanderingMonk extends NPC {
     private static final float SCALE = 1.5f;
@@ -28,10 +30,18 @@ public class WanderingMonk extends NPC {
         homeX = location.x;
         homeY = location.y;
         isInteractable = true;
-        talkedToTime = 200;
+        talkedToTime = 400;
         textbox.setText(message);
-        textboxOffsetX = -20;
-        textboxOffsetY = -50;
+        textbox.setFillColor(new Color(30, 24, 49, 225));
+        textbox.setBorderColor(new Color(214, 170, 92));
+        textbox.setBorderThickness(3);
+        textbox.setTextColor(new Color(251, 230, 160));
+        textbox.setFont(new Font ("Serif", Font.BOLD, 16));
+        textbox.setHPadding(14);
+        textbox.setVPadding(10);
+        textbox.setGap(4);
+        textboxOffsetX = -90;
+        textboxOffsetY = -105;
     }
 
     public static boolean hasCheckpoint(String mapName) {
