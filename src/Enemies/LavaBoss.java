@@ -5,6 +5,7 @@ import Engine.GraphicsHandler;
 import Engine.ImageLoader;
 import Engine.ScreenManager;
 import GameObject.Frame;
+import GameObject.ImageEffect;
 import GameObject.Rectangle;
 import Level.Enemy;
 import Level.MapEntityStatus;
@@ -47,7 +48,9 @@ public class LavaBoss extends Enemy {
     private static final BufferedImage LEFT_HAND =
         ImageLoader.loadSubImage("Lava Boss hands .png", 105, 180, HAND_WIDTH, HAND_HEIGHT);
     private static final BufferedImage RIGHT_HAND =
-        ImageLoader.loadSubImage("Lava Boss hands .png", 280, 180, HAND_WIDTH, HAND_HEIGHT);
+        ImageLoader.loadSubImage("Lava Boss hands .png", 275, 690, HAND_WIDTH, HAND_HEIGHT);
+    private static final BufferedImage FIST_HAND =
+        ImageLoader.loadSubImage("Lava Boss hands .png", 105, 690, HAND_WIDTH, HAND_HEIGHT);
 
     private enum AttackState { WAITING, WINDUP, SLAMMING, RECOVERING }
 
@@ -64,6 +67,8 @@ public class LavaBoss extends Enemy {
     private float rightHandY;
     private boolean leftHandHitPlayer;
     private boolean rightHandHitPlayer;
+    private boolean leftHandAttacksNext = true;
+    private boolean leftHandIsAttacking;
 
     public LavaBoss(Point location) {
         super(location.x, location.y, createAnimations(), "IDLE");
@@ -175,33 +180,54 @@ public class LavaBoss extends Enemy {
             rightHandY = restY;
             if (--attackStateTimer <= 0) {
                 attackState = AttackState.SLAMMING;
-                leftHandHitPlayer = false;
-                rightHandHitPlayer = false;
+                leftHandIsAttacking = leftHandAttacksNext;
+                leftHandAttacksNext = !leftHandAttacksNext;
+                if (leftHandIsAttacking) {
+                    leftHandHitPlayer = false;
+                } else {
+                    rightHandHitPlayer = false;
+                }
             }
             return;
         }
 
         if (attackState == AttackState.SLAMMING) {
-            leftHandY = Math.min(leftGroundY, leftHandY + HAND_SLAM_SPEED);
-            rightHandY = Math.min(rightGroundY, rightHandY + HAND_SLAM_SPEED);
-            if (leftHandY >= leftGroundY && !leftHandHitPlayer) {
-                markHandImpact(true);
-                startTileBounce(leftX + handWidth / 2f);
+            if (leftHandIsAttacking) {
+                leftHandY = Math.min(leftGroundY, leftHandY + HAND_SLAM_SPEED);
+                rightHandY = restY;
+                if (leftHandY >= leftGroundY && !leftHandHitPlayer) {
+                    markHandImpact(true);
+                    startTileBounce(leftX + handWidth / 2f);
+                }
+            } else {
+                rightHandY = Math.min(rightGroundY, rightHandY + HAND_SLAM_SPEED);
+                leftHandY = restY;
+                if (rightHandY >= rightGroundY && !rightHandHitPlayer) {
+                    markHandImpact(false);
+                    startTileBounce(rightX + handWidth / 2f);
+                }
             }
-            if (rightHandY >= rightGroundY && !rightHandHitPlayer) {
-                markHandImpact(false);
-                startTileBounce(rightX + handWidth / 2f);
-            }
-            if (leftHandY >= leftGroundY && rightHandY >= rightGroundY) {
+            boolean attackingHandHitGround = leftHandIsAttacking
+                ? leftHandY >= leftGroundY
+                : rightHandY >= rightGroundY;
+            if (attackingHandHitGround) {
                 attackState = AttackState.RECOVERING;
                 attackStateTimer = RECOVERY_DURATION;
             }
             return;
         }
 
-        leftHandY = Math.max(restY, leftHandY - HAND_RAISE_SPEED);
-        rightHandY = Math.max(restY, rightHandY - HAND_RAISE_SPEED);
-        if (--attackStateTimer <= 0 || (leftHandY <= restY && rightHandY <= restY)) {
+        if (leftHandIsAttacking) {
+            leftHandY = Math.max(restY, leftHandY - HAND_RAISE_SPEED);
+            rightHandY = restY;
+        } else {
+            rightHandY = Math.max(restY, rightHandY - HAND_RAISE_SPEED);
+            leftHandY = restY;
+        }
+        boolean attackingHandReturned = leftHandIsAttacking
+            ? leftHandY <= restY
+            : rightHandY <= restY;
+        if (--attackStateTimer <= 0 || attackingHandReturned) {
             leftHandY = restY;
             rightHandY = restY;
             attackState = AttackState.WAITING;
@@ -244,15 +270,15 @@ public class LavaBoss extends Enemy {
                 }
 
                 MapTile floorTile = null;
-            for (int row = map.getHeight() - 1; row >= 0; row--) {
-                MapTile tile = map.getMapTile(column, row);
-                if (tile == null || (tile.getTileType() != TileType.NOT_PASSABLE
-                    && tile.getTileType() != TileType.PILLAR)) {
-                    continue;
-                }
+                for (int row = map.getHeight() - 1; row >= 0; row--) {
+                    MapTile tile = map.getMapTile(column, row);
+                    if (tile == null || (tile.getTileType() != TileType.NOT_PASSABLE
+                        && tile.getTileType() != TileType.PILLAR)) {
+                        continue;
+                    }
                     floorTile = tile;
-                break;
-            }
+                    break;
+                }
                 if (floorTile != null && !isTileBouncing(floorTile)) {
                     tileBounces.add(new TileBounce(
                         floorTile,
@@ -383,21 +409,29 @@ public class LavaBoss extends Enemy {
             rightHandY = restY;
         }
         drawOutlinedImage(graphicsHandler, currentFrame.getImage(), bossX, bossY, getWidth(), getHeight());
+        boolean showingFist = attackState == AttackState.SLAMMING
+            || attackState == AttackState.RECOVERING;
+        BufferedImage leftHandImage = showingFist
+            && leftHandIsAttacking ? FIST_HAND : LEFT_HAND;
+        BufferedImage rightHandImage = showingFist
+            && !leftHandIsAttacking ? FIST_HAND : RIGHT_HAND;
         drawOutlinedImage(
             graphicsHandler,
-            LEFT_HAND,
+            leftHandImage,
             Math.round(leftX - map.getCamera().getX()),
             Math.round(leftHandY - map.getCamera().getY()),
             handWidth,
-            handHeight
+            handHeight,
+            false
         );
         drawOutlinedImage(
             graphicsHandler,
-            RIGHT_HAND,
+            rightHandImage,
             Math.round(rightX - map.getCamera().getX()),
             Math.round(rightHandY - map.getCamera().getY()),
             handWidth,
-            handHeight
+            handHeight,
+            rightHandImage == FIST_HAND
         );
 
         int barWidth = 360;
@@ -431,6 +465,18 @@ public class LavaBoss extends Enemy {
         int width,
         int height
     ) {
+        drawOutlinedImage(graphicsHandler, image, x, y, width, height, false);
+    }
+
+    private void drawOutlinedImage(
+        GraphicsHandler graphicsHandler,
+        BufferedImage image,
+        int x,
+        int y,
+        int width,
+        int height,
+        boolean flipHorizontally
+    ) {
         BufferedImage outlinedImage = outlinedImages.computeIfAbsent(image, LavaBoss::createOutlinedImage);
         int outlineX = Math.round(OUTLINE_SIZE * width / (float) image.getWidth());
         int outlineY = Math.round(OUTLINE_SIZE * height / (float) image.getHeight());
@@ -439,7 +485,8 @@ public class LavaBoss extends Enemy {
             x - outlineX,
             y - outlineY,
             width + 2 * outlineX,
-            height + 2 * outlineY
+            height + 2 * outlineY,
+            flipHorizontally ? ImageEffect.FLIP_HORIZONTAL : ImageEffect.NONE
         );
     }
 
