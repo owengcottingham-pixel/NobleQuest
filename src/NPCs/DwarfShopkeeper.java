@@ -3,6 +3,8 @@ package NPCs;
 import Builders.FrameBuilder;
 import Engine.GraphicsHandler;
 import Engine.Key;
+import Engine.KeyBinds;
+import Engine.KeyPrompt;
 import Engine.KeyLocker;
 import Engine.Keyboard;
 import Engine.ImageLoader;
@@ -64,7 +66,10 @@ public class DwarfShopkeeper extends NPC {
     private final Random random = new Random();
 
     private final KeyLocker keyLocker = new KeyLocker();
-    private final Key INTERACT_KEY = Key.E;
+    // read fresh each frame: the Controls menu can change it mid-level
+    private Key interactKey() {
+        return KeyBinds.get(KeyBinds.Action.INTERACT);
+    }
     // draw() has no player, so update() caches whether the prompt should show
     private boolean canTalk = false;
     private boolean shopRequested = false;
@@ -136,13 +141,13 @@ public class DwarfShopkeeper extends NPC {
         pulse++;
         canTalk = playerCanTalk(player);
 
-        if (Keyboard.isKeyUp(INTERACT_KEY)) {
-            keyLocker.unlockKey(INTERACT_KEY);
+        if (Keyboard.isKeyUp(interactKey())) {
+            keyLocker.unlockKey(interactKey());
         }
         if (canTalk && !shopOpen
-                && Keyboard.isKeyDown(INTERACT_KEY)
-                && !keyLocker.isKeyLocked(INTERACT_KEY)) {
-            keyLocker.lockKey(INTERACT_KEY);
+                && Keyboard.isKeyDown(interactKey())
+                && !keyLocker.isKeyLocked(interactKey())) {
+            keyLocker.lockKey(interactKey());
             shopRequested = true;
         }
 
@@ -249,8 +254,14 @@ public class DwarfShopkeeper extends NPC {
             px = Math.round(getCalibratedXLocation()) + CELL_W / 2 - PROMPT_SIZE / 2;
             py = Math.round(getCalibratedYLocation()) - PROMPT_LIFT - bob;
         }
-        BufferedImage cap = Keyboard.isKeyDown(INTERACT_KEY) ? promptDown : promptUp;
-        graphicsHandler.drawImage(cap, px, py, PROMPT_SIZE, PROMPT_SIZE);
+        boolean held = Keyboard.isKeyDown(interactKey());
+        if (interactKey() == Key.E) {
+            // the painted cap says E, so it is only right while E is the binding
+            graphicsHandler.drawImage(held ? promptDown : promptUp, px, py, PROMPT_SIZE, PROMPT_SIZE);
+        } else {
+            KeyPrompt.draw(graphicsHandler, interactKey(),
+                    px + PROMPT_SIZE / 2, py, PROMPT_SIZE, held);
+        }
     }
 
     private String animationFor() {
