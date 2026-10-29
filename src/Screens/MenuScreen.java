@@ -135,11 +135,13 @@ public class MenuScreen extends Screen {
         credits.setOutlineColor(Color.BLACK);
         credits.setOutlineThickness(3);
 
+        layoutMenu();
+
         // Reset menu selection
         currentMenuItemHovered = 0;
         keyPressTimer = 0;
 
-        keyLocker.lockKey(Key.SPACE);
+        keyLocker.lockKey(Key.ENTER);
     }
 
     @Override
@@ -185,16 +187,16 @@ public class MenuScreen extends Screen {
             credits.setColor(selectedColor);
         }
 
-        // Unlock SPACE when released
-        if (Keyboard.isKeyUp(Key.SPACE)) {
-            keyLocker.unlockKey(Key.SPACE);
+        // Unlock ENTER when released
+        if (Keyboard.isKeyUp(Key.ENTER)) {
+            keyLocker.unlockKey(Key.ENTER);
         }
 
         // Select menu option
-        if (!keyLocker.isKeyLocked(Key.SPACE)
-                && Keyboard.isKeyDown(Key.SPACE)) {
+        if (!keyLocker.isKeyLocked(Key.ENTER)
+                && Keyboard.isKeyDown(Key.ENTER)) {
 
-            keyLocker.lockKey(Key.SPACE);
+            keyLocker.lockKey(Key.ENTER);
 
             if (currentMenuItemHovered == 0) {
 
@@ -219,6 +221,7 @@ public class MenuScreen extends Screen {
 
     @Override
     public void draw(GraphicsHandler graphicsHandler) {
+        layoutMenu();
 
         // Draw Background.png across entire menu
         if (backgroundImage != null) {
@@ -290,5 +293,44 @@ public class MenuScreen extends Screen {
         playGame.draw(graphicsHandler);
         settings.draw(graphicsHandler);
         credits.draw(graphicsHandler);
+    }
+
+    private void layoutMenu() {
+        screenWidth = ScreenManager.getScreenWidth();
+        screenHeight = ScreenManager.getScreenHeight();
+        if (screenWidth <= 0 || screenHeight <= 0) {
+            return;
+        }
+
+        float scale = Math.min(screenWidth / 800.0f, screenHeight / 650.0f);
+        float offsetX = (screenWidth - 800 * scale) / 2;
+        float offsetY = (screenHeight - 650 * scale) / 2;
+
+        logoWidth = Math.round(450 * scale);
+        logoHeight = Math.round(450 * scale);
+        logoX = (screenWidth - logoWidth) / 2;
+        logoY = Math.round(offsetY - 50 * scale);
+
+        buttonWidth = Math.round(250 * scale);
+        buttonHeight = Math.round(150 * scale);
+        buttonX = (screenWidth - buttonWidth) / 2;
+        playButtonY = Math.round(offsetY + 275 * scale);
+        settingsButtonY = Math.round(offsetY + 375 * scale);
+        creditsButtonY = Math.round(offsetY + 475 * scale);
+        fontSize = Math.max(1, Math.round(30 * scale));
+
+        Font menuFont = new Font("Arial", Font.PLAIN, fontSize);
+        FontMetrics metrics = new Canvas().getFontMetrics(menuFont);
+        int textOffset = (buttonHeight - metrics.getHeight()) / 2;
+
+        playGame.setFontSize(fontSize);
+        playGame.setLocation((screenWidth - metrics.stringWidth("PLAY GAME")) / 2,
+            playButtonY + textOffset);
+        settings.setFontSize(fontSize);
+        settings.setLocation((screenWidth - metrics.stringWidth("SETTINGS")) / 2,
+            settingsButtonY + textOffset);
+        credits.setFontSize(fontSize);
+        credits.setLocation((screenWidth - metrics.stringWidth("CREDITS")) / 2,
+            creditsButtonY + textOffset);
     }
 }
