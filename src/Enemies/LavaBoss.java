@@ -19,6 +19,7 @@ import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +29,8 @@ public class LavaBoss extends Enemy {
     private static final int SPRITE_SIZE = 512;
     private static final int MAX_HEALTH = 10;
     private static final int HIT_COOLDOWN = 24;
+    private static final int START_INVULNERABILITY = 150;
+    private static final int HEAD_RETURN_INVULNERABILITY = 120;
     private static final float SPRITE_SCALE = 0.5f;
     private static final float MOVE_SPEED = 2.2f;
     private static final float HOVER_HEIGHT = 420f;
@@ -38,6 +41,14 @@ public class LavaBoss extends Enemy {
     private static final float ENTRANCE_START_OFFSET = 480f;
     private static final float HAND_SLAM_SPEED = 12f;
     private static final float HAND_RAISE_SPEED = 9f;
+    private static final float HAND_SLIDE_SPEED = 8f;
+    private static final float HEAD_DROP_SPEED = 7f;
+    private static final float HEAD_SWEEP_SPEED = 8f;
+    private static final float HEAD_RETURN_SPEED = 7f;
+    private static final int MOUTH_X = 82;
+    private static final int MOUTH_Y = 164;
+    private static final int MOUTH_WIDTH = 94;
+    private static final int MOUTH_HEIGHT = 42;
     private static final float TILE_BOUNCE_HEIGHT = 48f;
     private static final int TILE_BOUNCE_DURATION = 36;
     private static final int TILE_WAVE_RADIUS = 8;
@@ -45,19 +56,24 @@ public class LavaBoss extends Enemy {
     private static final int HAND_WIDTH = 125;
     private static final int HAND_HEIGHT = 150;
     private static final int OUTLINE_SIZE = 5;
+    private static final BufferedImage HAND_SHEET = ImageLoader.load("Lava Boss hands.png");
     private static final BufferedImage LEFT_HAND =
-        ImageLoader.loadSubImage("Lava Boss hands .png", 105, 180, HAND_WIDTH, HAND_HEIGHT);
+        HAND_SHEET.getSubimage(1110, 170, 160, 175);
     private static final BufferedImage RIGHT_HAND =
-        ImageLoader.loadSubImage("Lava Boss hands .png", 275, 690, HAND_WIDTH, HAND_HEIGHT);
+        HAND_SHEET.getSubimage(1260, 170, 160, 175);
     private static final BufferedImage FIST_HAND =
-        ImageLoader.loadSubImage("Lava Boss hands .png", 105, 690, HAND_WIDTH, HAND_HEIGHT);
+        HAND_SHEET.getSubimage(1100, 650, 160, 190);
 
-    private enum AttackState { WAITING, WINDUP, SLAMMING, RECOVERING }
+    private enum AttackState {
+        WAITING, WINDUP, SLAMMING, SLIDING, RETURNING, HEAD_DROPPING,
+        HEAD_SWEEPING, HEAD_RETURNING, RECOVERING
+    }
 
     private final IdentityHashMap<BufferedImage, BufferedImage> outlinedImages = new IdentityHashMap<>();
     private final ArrayList<TileBounce> tileBounces = new ArrayList<>();
     private int health = MAX_HEALTH;
     private int hitCooldown;
+    private int bossInvulnerabilityTimer = START_INVULNERABILITY;
     private int entranceTimer = ENTRANCE_DURATION;
     private final float entranceTargetY;
     private int attackTimer = SLAM_INTERVAL;
@@ -69,6 +85,16 @@ public class LavaBoss extends Enemy {
     private boolean rightHandHitPlayer;
     private boolean leftHandAttacksNext = true;
     private boolean leftHandIsAttacking;
+    private float slidingHandX;
+    private boolean slideHitPlayer;
+    private boolean headAttackNext = true;
+    private boolean headSweepRightNext = true;
+    private boolean headHitPlayer;
+    private float headHomeX;
+    private float headHomeY;
+    private float headSweepStartX;
+    private float headSweepTargetX;
+    private float headRollAngle;
 
     public LavaBoss(Point location) {
         super(location.x, location.y, createAnimations(), "IDLE");
@@ -79,26 +105,29 @@ public class LavaBoss extends Enemy {
 
     private static HashMap<String, Frame[]> createAnimations() {
         BufferedImage sheet = ImageLoader.load("Lava Boss.png");
-        Frame[] idleFrames = new Frame[8];
-
-        for (int frameIndex = 0; frameIndex < idleFrames.length; frameIndex++) {
-            int row = frameIndex / 3;
-            int column = frameIndex % 3;
-            BufferedImage image = sheet.getSubimage(
-                column * SPRITE_SIZE,
-                row * SPRITE_SIZE,
-                SPRITE_SIZE,
-                SPRITE_SIZE
-            );
-            idleFrames[frameIndex] = new FrameBuilder(image, 12)
-                .withScale(SPRITE_SCALE)
-                .withBounds(100, 110, 312, 330)
-                .build();
-        }
+        Frame closedJawFrame = createHeadFrame(sheet, 0, 0);
+        Frame openJawFrame = createHeadFrame(sheet, 0, 1);
 
         HashMap<String, Frame[]> animations = new HashMap<>();
-        animations.put("IDLE", idleFrames);
+        animations.put("IDLE", new Frame[] {closedJawFrame});
+        animations.put("HEAD_SWEEP", new Frame[] {
+            closedJawFrame.copy(),
+            openJawFrame
+        });
         return animations;
+    }
+
+    private static Frame createHeadFrame(BufferedImage sheet, int row, int column) {
+        BufferedImage image = sheet.getSubimage(
+            column * SPRITE_SIZE,
+            row * SPRITE_SIZE,
+            SPRITE_SIZE,
+            SPRITE_SIZE
+        );
+        return new FrameBuilder(image, 8)
+            .withScale(SPRITE_SCALE)
+            .withBounds(100, 110, 312, 330)
+            .build();
     }
 
     @Override
@@ -107,25 +136,44 @@ public class LavaBoss extends Enemy {
             return;
         }
 
+        updateTileBounces(player);
+        if (health <= 0) {
+            if (tileBounces.isEmpty()) {
+                mapEntityStatus = MapEntityStatus.REMOVED;
+            }
+            return;
+        }
+
         if (hitCooldown > 0) {
             hitCooldown--;
         }
-        updateTileBounces(player);
         if (entranceTimer > 0) {
             riseIntoArena();
             super.update(player);
             return;
         }
+        if (bossInvulnerabilityTimer > 0) {
+            bossInvulnerabilityTimer--;
+        }
         if (attackState == AttackState.WAITING) {
             hoverAbovePlayer(player);
         }
         updateHandAttack(player);
+        setCurrentAnimationName(
+            attackState == AttackState.HEAD_DROPPING || attackState == AttackState.HEAD_SWEEPING
+                ? "HEAD_SWEEP"
+                : "IDLE"
+        );
         if (player.isAttacking() && intersects(player)) {
             takeHit(player);
         }
-        if (mapEntityStatus != MapEntityStatus.REMOVED) {
+        if (health > 0 && mapEntityStatus != MapEntityStatus.REMOVED) {
             super.update(player);
         }
+    }
+
+    @Override
+    public void touchedPlayer(Player player) {
     }
 
     private void riseIntoArena() {
@@ -169,8 +217,58 @@ public class LavaBoss extends Enemy {
             leftHandY = restY;
             rightHandY = restY;
             if (attackTimer <= 0) {
-                attackState = AttackState.WINDUP;
-                attackStateTimer = WINDUP_DURATION;
+                if (isEnraged() && headAttackNext) {
+                    beginHeadAttack();
+                    headAttackNext = false;
+                } else {
+                    attackState = AttackState.WINDUP;
+                    attackStateTimer = isEnraged() ? WINDUP_DURATION / 2 : WINDUP_DURATION;
+                    if (isEnraged()) {
+                        headAttackNext = true;
+                    }
+                }
+            }
+            return;
+        }
+
+        if (attackState == AttackState.HEAD_DROPPING) {
+            float nextX = moveTowardsValue(getX(), headSweepStartX, HEAD_DROP_SPEED);
+            float groundY = findGroundY(nextX + getWidth() / 2f);
+            float targetY = groundY - MOUTH_Y - MOUTH_HEIGHT;
+            setLocation(nextX, moveTowardsValue(getY(), targetY, HEAD_DROP_SPEED));
+            if (getX() == headSweepStartX && getY() == targetY) {
+                attackState = AttackState.HEAD_SWEEPING;
+            }
+            return;
+        }
+
+        if (attackState == AttackState.HEAD_SWEEPING) {
+            float targetY = findGroundY(getX() + getWidth() / 2f) - MOUTH_Y - MOUTH_HEIGHT;
+            float nextX = moveTowardsValue(getX(), headSweepTargetX, HEAD_SWEEP_SPEED);
+            float nextY = moveTowardsValue(getY(), targetY, HEAD_DROP_SPEED);
+            headRollAngle += (nextX - getX()) / (getWidth() / 2f);
+            setLocation(nextX, nextY);
+
+            Rectangle mouthBounds = getRotatedMouthBounds();
+            if (!headHitPlayer && mouthBounds.intersects(player.getBounds())) {
+                player.damage(1);
+                headHitPlayer = true;
+            }
+            if (getX() == headSweepTargetX) {
+                attackState = AttackState.HEAD_RETURNING;
+            }
+            return;
+        }
+
+        if (attackState == AttackState.HEAD_RETURNING) {
+            float nextX = moveTowardsValue(getX(), headHomeX, HEAD_RETURN_SPEED);
+            float nextY = moveTowardsValue(getY(), headHomeY, HEAD_RETURN_SPEED);
+            setLocation(nextX, nextY);
+            if (getX() == headHomeX && getY() == headHomeY) {
+                headRollAngle = 0;
+                attackState = AttackState.WAITING;
+                attackTimer = RECOVERY_DURATION;
+                bossInvulnerabilityTimer = HEAD_RETURN_INVULNERABILITY;
             }
             return;
         }
@@ -197,22 +295,88 @@ public class LavaBoss extends Enemy {
                 rightHandY = restY;
                 if (leftHandY >= leftGroundY && !leftHandHitPlayer) {
                     markHandImpact(true);
-                    startTileBounce(leftX + handWidth / 2f);
+                    if (!isEnraged()) {
+                        startTileBounce(leftX + handWidth / 2f);
+                    }
                 }
             } else {
                 rightHandY = Math.min(rightGroundY, rightHandY + HAND_SLAM_SPEED);
                 leftHandY = restY;
                 if (rightHandY >= rightGroundY && !rightHandHitPlayer) {
                     markHandImpact(false);
-                    startTileBounce(rightX + handWidth / 2f);
+                    if (!isEnraged()) {
+                        startTileBounce(rightX + handWidth / 2f);
+                    }
                 }
             }
             boolean attackingHandHitGround = leftHandIsAttacking
                 ? leftHandY >= leftGroundY
                 : rightHandY >= rightGroundY;
             if (attackingHandHitGround) {
-                attackState = AttackState.RECOVERING;
-                attackStateTimer = RECOVERY_DURATION;
+                if (isEnraged()) {
+                    attackState = AttackState.SLIDING;
+                    slidingHandX = leftHandIsAttacking ? leftX : rightX;
+                    slideHitPlayer = false;
+                } else {
+                    attackState = AttackState.RECOVERING;
+                    attackStateTimer = RECOVERY_DURATION;
+                }
+            }
+            return;
+        }
+
+        if (attackState == AttackState.SLIDING) {
+            float tileWidth = map.getTileset().getScaledSpriteWidth();
+            float minX = tileWidth;
+            float maxX = Math.max(minX, map.getWidthPixels() - tileWidth - handWidth);
+            float targetX = leftHandIsAttacking ? maxX : minX;
+            float distance = targetX - slidingHandX;
+            slidingHandX += Math.signum(distance) * Math.min(Math.abs(distance), HAND_SLIDE_SPEED);
+            float slideY = findGroundY(slidingHandX + handWidth / 2f) - handHeight;
+            if (leftHandIsAttacking) {
+                leftHandY = slideY;
+                rightHandY = restY;
+            } else {
+                rightHandY = slideY;
+                leftHandY = restY;
+            }
+
+            Rectangle slidingHandBounds = new Rectangle(
+                slidingHandX,
+                slideY,
+                Math.round(handWidth),
+                Math.round(handHeight)
+            );
+            if (!slideHitPlayer && slidingHandBounds.intersects(player.getBounds())) {
+                player.damage(1);
+                slideHitPlayer = true;
+            }
+
+            if (slidingHandX == targetX) {
+                attackState = AttackState.RETURNING;
+            }
+            return;
+        }
+
+        if (attackState == AttackState.RETURNING) {
+            float targetX = getHandX(leftHandIsAttacking, handWidth);
+            float distance = targetX - slidingHandX;
+            slidingHandX += Math.signum(distance) * Math.min(Math.abs(distance), HAND_SLIDE_SPEED);
+            float targetY = Math.max(restY, leftHandIsAttacking ? leftHandY : rightHandY);
+            float handY = targetY - HAND_RAISE_SPEED;
+            if (leftHandIsAttacking) {
+                leftHandY = Math.max(restY, handY);
+                rightHandY = restY;
+            } else {
+                rightHandY = Math.max(restY, handY);
+                leftHandY = restY;
+            }
+            if (slidingHandX == targetX
+                && (leftHandIsAttacking ? leftHandY : rightHandY) <= restY) {
+                leftHandY = restY;
+                rightHandY = restY;
+                attackState = AttackState.WAITING;
+                attackTimer = RECOVERY_DURATION;
             }
             return;
         }
@@ -231,8 +395,62 @@ public class LavaBoss extends Enemy {
             leftHandY = restY;
             rightHandY = restY;
             attackState = AttackState.WAITING;
-            attackTimer = SLAM_INTERVAL;
+            attackTimer = isEnraged() ? SLAM_INTERVAL / 2 : SLAM_INTERVAL;
         }
+    }
+
+    private boolean isEnraged() {
+        return health <= MAX_HEALTH / 2;
+    }
+
+    private void beginHeadAttack() {
+        headHomeX = getX();
+        headHomeY = getY();
+        float tileWidth = map.getTileset().getScaledSpriteWidth();
+        float minX = tileWidth;
+        float maxX = Math.max(minX, map.getWidthPixels() - tileWidth - getWidth());
+        if (headSweepRightNext) {
+            headSweepStartX = minX;
+            headSweepTargetX = maxX;
+        } else {
+            headSweepStartX = maxX;
+            headSweepTargetX = minX;
+        }
+        headSweepRightNext = !headSweepRightNext;
+        headHitPlayer = false;
+        headRollAngle = 0;
+        attackState = AttackState.HEAD_DROPPING;
+    }
+
+    private Rectangle getRotatedMouthBounds() {
+        double cos = Math.abs(Math.cos(headRollAngle));
+        double sin = Math.abs(Math.sin(headRollAngle));
+        float centerOffsetX = MOUTH_X + MOUTH_WIDTH / 2f - getWidth() / 2f;
+        float centerOffsetY = MOUTH_Y + MOUTH_HEIGHT / 2f - getHeight() / 2f;
+        float rotatedCenterX = getX() + getWidth() / 2f
+            + (float) (centerOffsetX * Math.cos(headRollAngle) - centerOffsetY * Math.sin(headRollAngle));
+        float rotatedCenterY = getY() + getHeight() / 2f
+            + (float) (centerOffsetX * Math.sin(headRollAngle) + centerOffsetY * Math.cos(headRollAngle));
+        int boundsWidth = (int) Math.ceil(cos * MOUTH_WIDTH + sin * MOUTH_HEIGHT);
+        int boundsHeight = (int) Math.ceil(sin * MOUTH_WIDTH + cos * MOUTH_HEIGHT);
+        return new Rectangle(
+            rotatedCenterX - boundsWidth / 2f,
+            rotatedCenterY - boundsHeight / 2f,
+            boundsWidth,
+            boundsHeight
+        );
+    }
+
+    private float moveTowardsValue(float current, float target, float speed) {
+        float distance = target - current;
+        return current + Math.signum(distance) * Math.min(Math.abs(distance), speed);
+    }
+
+    private void stopTileBounces() {
+        for (TileBounce bounce : tileBounces) {
+            bounce.tile.setY(bounce.startY);
+        }
+        tileBounces.clear();
     }
 
     private float getHandX(boolean leftHand, float handWidth) {
@@ -371,29 +589,42 @@ public class LavaBoss extends Enemy {
 
     @Override
     public boolean hitByBolt(Player player) {
-        if (mapEntityStatus == MapEntityStatus.REMOVED || hitCooldown > 0) {
+        if (mapEntityStatus == MapEntityStatus.REMOVED
+            || health <= 0
+            || hitCooldown > 0
+            || isHeadAwayFromStart()
+            || bossInvulnerabilityTimer > 0) {
             return false;
         }
         takeHit(player);
         return true;
     }
 
+    private boolean isHeadAwayFromStart() {
+        return attackState == AttackState.HEAD_DROPPING
+            || attackState == AttackState.HEAD_SWEEPING
+            || attackState == AttackState.HEAD_RETURNING;
+    }
+
     private void takeHit(Player player) {
-        if (hitCooldown > 0) {
+        if (health <= 0 || hitCooldown > 0 || isHeadAwayFromStart() || bossInvulnerabilityTimer > 0) {
             return;
         }
 
         health--;
         hitCooldown = HIT_COOLDOWN;
+        if (health == MAX_HEALTH / 2) {
+            stopTileBounces();
+        }
         if (health <= 0) {
+            health = 0;
             player.addCoins(25);
-            mapEntityStatus = MapEntityStatus.REMOVED;
         }
     }
 
     @Override
     public void draw(GraphicsHandler graphicsHandler) {
-        if (mapEntityStatus == MapEntityStatus.REMOVED) {
+        if (mapEntityStatus == MapEntityStatus.REMOVED || health <= 0) {
             return;
         }
 
@@ -404,35 +635,54 @@ public class LavaBoss extends Enemy {
         float restY = getY() + 90;
         float leftX = getHandX(true, handWidth);
         float rightX = getHandX(false, handWidth);
+        boolean movingLeftHand = attackState == AttackState.SLIDING
+            || attackState == AttackState.RETURNING
+            || (isEnraged() && attackState == AttackState.RECOVERING);
+        if (movingLeftHand) {
+            if (leftHandIsAttacking) {
+                leftX = slidingHandX;
+            } else {
+                rightX = slidingHandX;
+            }
+        }
         if (attackState == AttackState.WAITING) {
             leftHandY = restY;
             rightHandY = restY;
         }
-        drawOutlinedImage(graphicsHandler, currentFrame.getImage(), bossX, bossY, getWidth(), getHeight());
+        if (attackState == AttackState.HEAD_SWEEPING) {
+            drawRotatedOutlinedHead(graphicsHandler, bossX, bossY);
+        } else {
+            drawOutlinedImage(graphicsHandler, currentFrame.getImage(), bossX, bossY, getWidth(), getHeight());
+        }
+        boolean showingHands = attackState != AttackState.HEAD_DROPPING
+            && attackState != AttackState.HEAD_SWEEPING
+            && attackState != AttackState.HEAD_RETURNING;
         boolean showingFist = attackState == AttackState.SLAMMING
+            || attackState == AttackState.SLIDING
+            || attackState == AttackState.RETURNING
             || attackState == AttackState.RECOVERING;
-        BufferedImage leftHandImage = showingFist
-            && leftHandIsAttacking ? FIST_HAND : LEFT_HAND;
-        BufferedImage rightHandImage = showingFist
-            && !leftHandIsAttacking ? FIST_HAND : RIGHT_HAND;
-        drawOutlinedImage(
-            graphicsHandler,
-            leftHandImage,
-            Math.round(leftX - map.getCamera().getX()),
-            Math.round(leftHandY - map.getCamera().getY()),
-            handWidth,
-            handHeight,
-            false
-        );
-        drawOutlinedImage(
-            graphicsHandler,
-            rightHandImage,
-            Math.round(rightX - map.getCamera().getX()),
-            Math.round(rightHandY - map.getCamera().getY()),
-            handWidth,
-            handHeight,
-            rightHandImage == FIST_HAND
-        );
+        BufferedImage leftHandImage = showingFist && leftHandIsAttacking ? FIST_HAND : LEFT_HAND;
+        BufferedImage rightHandImage = showingFist && !leftHandIsAttacking ? FIST_HAND : RIGHT_HAND;
+        if (showingHands) {
+            drawOutlinedImage(
+                graphicsHandler,
+                leftHandImage,
+                Math.round(leftX - map.getCamera().getX()),
+                Math.round(leftHandY - map.getCamera().getY()),
+                handWidth,
+                handHeight,
+                false
+            );
+            drawOutlinedImage(
+                graphicsHandler,
+                rightHandImage,
+                Math.round(rightX - map.getCamera().getX()),
+                Math.round(rightHandY - map.getCamera().getY()),
+                handWidth,
+                handHeight,
+                rightHandImage == FIST_HAND
+            );
+        }
 
         int barWidth = 360;
         int barHeight = 14;
@@ -446,6 +696,13 @@ public class LavaBoss extends Enemy {
         if (fillWidth > 0) {
             graphicsHandler.drawFilledRectangle(barX, barY, fillWidth, barHeight, new Color(232, 70, 30));
         }
+        int halfHealthX = barX + barWidth / 2;
+        graphicsHandler.drawFilledRectangle(
+            halfHealthX - 2, barY - 3, 4, barHeight + 6, new Color(20, 12, 8)
+        );
+        graphicsHandler.drawFilledRectangle(
+            halfHealthX - 1, barY - 2, 2, barHeight + 4, Color.WHITE
+        );
         graphicsHandler.drawStringWithOutline(
             "LAVA BOSS",
             barX,
@@ -455,6 +712,25 @@ public class LavaBoss extends Enemy {
             Color.black,
             3
         );
+    }
+
+    private void drawRotatedOutlinedHead(GraphicsHandler graphicsHandler, int x, int y) {
+        BufferedImage image = currentFrame.getImage();
+        BufferedImage outlinedImage = outlinedImages.computeIfAbsent(image, LavaBoss::createOutlinedImage);
+        int outlineX = Math.round(OUTLINE_SIZE * getWidth() / (float) image.getWidth());
+        int outlineY = Math.round(OUTLINE_SIZE * getHeight() / (float) image.getHeight());
+        Graphics2D headGraphics = (Graphics2D) graphicsHandler.getGraphics().create();
+        headGraphics.translate(x + getWidth() / 2f, y + getHeight() / 2f);
+        headGraphics.rotate(headRollAngle);
+        headGraphics.drawImage(
+            outlinedImage,
+            -getWidth() / 2 - outlineX,
+            -getHeight() / 2 - outlineY,
+            getWidth() + outlineX * 2,
+            getHeight() + outlineY * 2,
+            null
+        );
+        headGraphics.dispose();
     }
 
     private void drawOutlinedImage(

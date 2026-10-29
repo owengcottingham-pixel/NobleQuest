@@ -88,7 +88,8 @@ public class GourdProjectile extends Enemy {
 
     // the boss died: poof, gone
     public void vanish() {
-        if (mapEntityStatus == MapEntityStatus.REMOVED || kind == Kind.DUST) return;
+        if (mapEntityStatus == MapEntityStatus.REMOVED || kind == Kind.DUST ||
+                kind == Kind.GROUND_WARNING || kind == Kind.ROOT_SPIKES) return;
         mapEntityStatus = MapEntityStatus.REMOVED;
         puff(map, getBounds().getX1() + getBounds().getWidth() / 2f, getBounds().getY2() + 1, 0);
     }

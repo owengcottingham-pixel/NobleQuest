@@ -43,7 +43,6 @@ public class Level1 extends Map {
         //this.playerStartPosition = getMapTile(175, 25).getLocation();
 
         //this.playerStartPosition = getMapTile(200, 45).getLocation();
-        //this.playerStartPosition = getMapTile(305, 23).getLocation();
 
         this.background = ImageLoader.load("Background.png");
     }
@@ -418,7 +417,7 @@ public ArrayList<EnhancedMapTile> loadEnhancedMapTiles() {
     bossTrigger.setBoss(new Gourdzilla(getMapTile(282, 21).getLocation()));
     enhancedMapTiles.add(bossTrigger);
 
-    CaveEntrance cave = new CaveEntrance(getMapTile(310, 22).getLocation(), 2, 2);    enhancedMapTiles.add(cave);
+    enhancedMapTiles.add(new CaveEntrance(getMapTile(311, 20).getLocation()));
 
     return enhancedMapTiles;
 }

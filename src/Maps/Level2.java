@@ -330,7 +330,7 @@ public class Level2 extends Map {
                 3
         ));
 
-        enhancedMapTiles.add(new CaveEntrance(getMapTile(94, 143).getLocation(), 1, 3));
+        enhancedMapTiles.add(new CaveEntrance(getMapTile(92, 142).getLocation()));
 
         return enhancedMapTiles;
     }
