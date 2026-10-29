@@ -3,7 +3,8 @@ package Engine;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 /*
  * The JFrame that holds the GamePanel
@@ -15,7 +16,9 @@ public class GameWindow {
 	private Rectangle windowedBounds;
 	private JMenuBar windowedMenuBar;
 	private JCheckBoxMenuItem fullscreenItem;
+	private KeyEventDispatcher fullscreenKeyDispatcher;
 	private boolean fullscreen;
+	private boolean toggleKeyDown;
 
 	public GameWindow() {
 		gameWindow = new JFrame("Game");
@@ -28,7 +31,7 @@ public class GameWindow {
 		gameWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // it'd be nice if this actually worked more than 1/3rd of the time
 		gameWindow.setVisible(true);
 		gamePanel.setupGame();
-		setupFullscreenToggle();
+		setupFullscreenKeyDispatcher();
 		gamePanel.requestFocusInWindow();
 	}
 
@@ -43,14 +46,43 @@ public class GameWindow {
 		gameWindow.setResizable(true);
 	}
 
-	private void setupFullscreenToggle() {
-		String actionName = "toggleFullscreen";
-		gameWindow.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-				.put(KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0), actionName);
-		gameWindow.getRootPane().getActionMap().put(actionName, new AbstractAction() {
+	private void setupFullscreenKeyDispatcher() {
+		fullscreenKeyDispatcher = event -> {
+			int keyCode = event.getKeyCode();
+			if (event.getID() == KeyEvent.KEY_RELEASED
+					&& (keyCode == KeyEvent.VK_F11 || keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_ESCAPE)) {
+				toggleKeyDown = false;
+				return false;
+			}
+
+			boolean toggleKey = keyCode == KeyEvent.VK_F11
+					|| (keyCode == KeyEvent.VK_ENTER && event.isAltDown());
+			boolean exitKey = fullscreen && keyCode == KeyEvent.VK_ESCAPE;
+			if (!toggleKey && !exitKey) {
+				return false;
+			}
+
+			if (gameWindow.isActive() && event.getID() == KeyEvent.KEY_PRESSED && !toggleKeyDown) {
+				toggleKeyDown = true;
+				if (toggleKey || fullscreen) {
+					SwingUtilities.invokeLater(this::toggleFullscreen);
+				}
+				event.consume();
+			}
+			return event.isConsumed();
+		};
+		KeyboardFocusManager.getCurrentKeyboardFocusManager()
+				.addKeyEventDispatcher(fullscreenKeyDispatcher);
+		gameWindow.addWindowListener(new WindowAdapter() {
 			@Override
-			public void actionPerformed(ActionEvent event) {
-				toggleFullscreen();
+			public void windowActivated(WindowEvent event) {
+				SwingUtilities.invokeLater(gamePanel::requestFocusInWindow);
+			}
+
+			@Override
+			public void windowClosed(WindowEvent event) {
+				KeyboardFocusManager.getCurrentKeyboardFocusManager()
+						.removeKeyEventDispatcher(fullscreenKeyDispatcher);
 			}
 		});
 	}
@@ -75,7 +107,9 @@ public class GameWindow {
 		}
 		fullscreenItem.setSelected(fullscreen);
 		gameWindow.getRootPane().revalidate();
-		gamePanel.requestFocusInWindow();
+		gameWindow.toFront();
+		gameWindow.requestFocus();
+		SwingUtilities.invokeLater(gamePanel::requestFocusInWindow);
 	}
 
 	// triggers the game loop to start as defined in the GamePanel class
