@@ -8,6 +8,8 @@ import java.awt.event.MouseEvent;
 public class Mouse {
     private static volatile int x, y;
 	private static volatile boolean leftDown, rightDown;
+	private static volatile double coordinateScale = 1;
+	private static volatile int coordinateOffsetX, coordinateOffsetY;
 
 	private static final MouseAdapter mouseListener = new MouseAdapter() {
 		@Override
@@ -56,8 +58,14 @@ public class Mouse {
 	}
 
 	private static void moveTo(MouseEvent e) {
-		x = e.getX();
-		y = e.getY();
+		x = (int) ((e.getX() - coordinateOffsetX) / coordinateScale);
+		y = (int) ((e.getY() - coordinateOffsetY) / coordinateScale);
+	}
+
+	static void setCoordinateTransform(double scale, int offsetX, int offsetY) {
+		coordinateScale = scale;
+		coordinateOffsetX = offsetX;
+		coordinateOffsetY = offsetY;
 	}
 
 	private static void setButton(MouseEvent e, boolean down) {
@@ -69,4 +77,3 @@ public class Mouse {
 		}
 	}
 }
-

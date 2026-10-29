@@ -1,11 +1,11 @@
 package Screens;
 
-import Engine.Config;
 import Engine.GraphicsHandler;
 import Engine.Key;
 import Engine.KeyBinds;
 import Engine.KeyLocker;
 import Engine.Keyboard;
+import Engine.ScreenManager;
 import Level.Player;
 import Players.HatSet;
 
@@ -186,8 +186,8 @@ public class ShopMenu {
             return;
         }
 
-        int screenW = Config.GAME_WINDOW_WIDTH;
-        int screenH = Config.GAME_WINDOW_HEIGHT;
+        int screenW = ScreenManager.getScreenWidth();
+        int screenH = ScreenManager.getScreenHeight();
         graphicsHandler.drawFilledRectangle(0, 0, screenW, screenH, DIM);
 
         int px = (screenW - PANEL_W) / 2;

@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
-import Engine.Config;
 import Engine.Key;
 import Engine.KeyBinds;
 import Engine.KeyLocker;
@@ -490,7 +489,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     private void drawCoinCounter(GraphicsHandler graphicsHandler) {
         int fieldWidth = coinDisplay.fieldWidth(COIN_SLOTS);
         int blockWidth = COIN_ICON_SIZE + COIN_ICON_GAP + fieldWidth;
-        int blockX = Config.GAME_WINDOW_WIDTH - HUD_MARGIN - blockWidth;
+        int blockX = ScreenManager.getScreenWidth() - HUD_MARGIN - blockWidth;
 
         graphicsHandler.drawImage(coinIcon, blockX, HUD_TOP, COIN_ICON_SIZE, COIN_ICON_SIZE);
 

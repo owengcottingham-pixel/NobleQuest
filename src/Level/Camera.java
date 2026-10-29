@@ -35,8 +35,7 @@ public class Camera extends Rectangle {
         this.map = map;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        this.leftoverSpaceX = ScreenManager.getScreenWidth() % tileWidth;
-        this.leftoverSpaceY = ScreenManager.getScreenHeight() % tileHeight;
+        resizeToScreen();
     }
 
     // gets the tile index that the camera's x and y values are currently on (top left tile)
@@ -50,6 +49,20 @@ public class Camera extends Rectangle {
     public void update(Player player) {
         updateMapTiles();
         updateMapEntities(player);
+    }
+
+    void resizeToScreen() {
+        int screenWidth = ScreenManager.getScreenWidth();
+        int screenHeight = ScreenManager.getScreenHeight();
+        setWidth(screenWidth / tileWidth);
+        setHeight(screenHeight / tileHeight);
+        leftoverSpaceX = screenWidth % tileWidth;
+        leftoverSpaceY = screenHeight % tileHeight;
+
+        float maxX = Math.max(0, map.getEndBoundX() - screenWidth);
+        float maxY = Math.max(0, map.getEndBoundY() - screenHeight);
+        setX(Math.max(0, Math.min(getX(), maxX)));
+        setY(Math.max(0, Math.min(getY(), maxY)));
     }
 
     private void updateMapTiles() {

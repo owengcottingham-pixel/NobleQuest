@@ -12,6 +12,8 @@ I recommend using a tool such as Visual Studio Code or IntelliJ to run this game
 The main method for the game is in the `Game` package > `Game.java` file.<br>
 The main method for the map editor is in the `MapEditor` package > `MapEditor.java` file.
 
+Press **F11** while playing to switch between windowed and fullscreen modes.
+
 ## Documentation
 This project includes a GitHub pages website in the `docs` folder where the documentation resides.<br>
 It can be accessed at [https://a-r-t.github.io/SER-225-Game-Platformer/](https://a-r-t.github.io/SER-225-Game-Platformer/).
