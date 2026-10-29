@@ -1,10 +1,11 @@
 package Screens;
 
-import Engine.Config;
 import Engine.GraphicsHandler;
 import Engine.Key;
+import Engine.KeyBinds;
 import Engine.KeyLocker;
 import Engine.Keyboard;
+import Engine.ScreenManager;
 import Level.Player;
 import Players.HatSet;
 
@@ -100,7 +101,7 @@ public class ShopMenu {
         messageTimer = 0;
         // lock the keys that are held at the moment of opening, so the same E
         // press that opened the shop cannot immediately buy the first row
-        keyLocker.lockKey(Key.E);
+        keyLocker.lockKey(confirmKey());
         keyLocker.lockKey(Key.ENTER);
         keyLocker.lockKey(Key.ESC);
     }
@@ -117,7 +118,7 @@ public class ShopMenu {
             messageTimer--;
         }
 
-        for (Key k : new Key[] { Key.W, Key.S, Key.UP, Key.DOWN, Key.E, Key.ENTER, Key.ESC }) {
+        for (Key k : new Key[] { Key.W, Key.S, Key.UP, Key.DOWN, confirmKey(), Key.ENTER, Key.ESC }) {
             if (Keyboard.isKeyUp(k)) {
                 keyLocker.unlockKey(k);
             }
@@ -130,13 +131,18 @@ public class ShopMenu {
             if (pressed(Key.S) || pressed(Key.DOWN)) {
                 selected = (selected + 1) % stock.size();
             }
-            if (pressed(Key.E) || pressed(Key.ENTER)) {
+            if (pressed(confirmKey()) || pressed(Key.ENTER)) {
                 buyOrEquip(player);
             }
         }
         if (pressed(Key.ESC)) {
             close();
         }
+    }
+
+    // whatever Interact is bound to -- the same key that opened the shop
+    private static Key confirmKey() {
+        return KeyBinds.get(KeyBinds.Action.INTERACT);
     }
 
     private boolean pressed(Key key) {
@@ -180,8 +186,8 @@ public class ShopMenu {
             return;
         }
 
-        int screenW = Config.GAME_WINDOW_WIDTH;
-        int screenH = Config.GAME_WINDOW_HEIGHT;
+        int screenW = ScreenManager.getScreenWidth();
+        int screenH = ScreenManager.getScreenHeight();
         graphicsHandler.drawFilledRectangle(0, 0, screenW, screenH, DIM);
 
         int px = (screenW - PANEL_W) / 2;
@@ -241,7 +247,8 @@ public class ShopMenu {
 
         graphicsHandler.drawString(stock.isEmpty()
                         ? "ESC close"
-                        : "W/S select    E buy or wear    ESC close",
+                        : "W/S select    " + KeyBinds.label(KeyBinds.Action.INTERACT)
+                          + " buy or wear    ESC close",
                 px + PAD, py + PANEL_H - 18, SMALL_FONT, PARCHMENT);
     }
 }

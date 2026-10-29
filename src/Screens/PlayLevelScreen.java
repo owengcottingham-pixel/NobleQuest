@@ -4,8 +4,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
-import Engine.Config;
 import Engine.Key;
+import Engine.KeyBinds;
 import Engine.KeyLocker;
 import Engine.Keyboard;
 import Engine.ScreenManager;
@@ -42,8 +42,9 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     private static final int INTRO_FADE_TIME = 60;
 
     // pause menu
-    private static final String[] PAUSE_OPTIONS = { "Resume", "Restart Level", "Main Menu" };
+    private static final String[] PAUSE_OPTIONS = { "Resume", "Restart Level", "Controls", "Main Menu" };
     private int pauseSelection = 0;
+    private final KeyBindMenu keyBindMenu = new KeyBindMenu();
     private final KeyLocker keyLocker = new KeyLocker();
     private boolean showIntroOnInit = false;
     private int introTimer;
@@ -119,18 +120,24 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     private boolean showControls = true;
     private boolean hWasDown = false;
 
-    private static final String[][] CONTROLS = {
-            { "A / D", "Move" },
-            { "W", "Jump" },
-            { "S", "Crouch" },
-            { "J", "Sword" },
+    // Built fresh from KeyBinds instead of being a hand-written list, which is
+    // what let it drift: it promised W for jump long after jump became Space.
+    // Only the mouse row is fixed, since the crossbow is not a key binding.
+    private static String[][] controlRows() {
+        return new String[][] {
+            { KeyBinds.label(KeyBinds.Action.MOVE_LEFT) + " / "
+                    + KeyBinds.label(KeyBinds.Action.MOVE_RIGHT), "Move" },
+            { KeyBinds.label(KeyBinds.Action.JUMP), "Jump" },
+            { KeyBinds.label(KeyBinds.Action.CROUCH), "Crouch" },
+            { KeyBinds.label(KeyBinds.Action.ATTACK), "Sword" },
             { "Left Click", "Crossbow (aim with mouse)" },
-            { "Shift", "Dash" },
-            { "Space", "Talk" },
-            { "E", "Shop / Wishing Well" },
-            { "Esc", "Pause" },
-            { "H", "Hide controls" }
-    };
+            { KeyBinds.label(KeyBinds.Action.DASH), "Dash" },
+            { KeyBinds.label(KeyBinds.Action.TALK), "Talk" },
+            { KeyBinds.label(KeyBinds.Action.INTERACT), "Shop / Wishing Well" },
+            { KeyBinds.label(KeyBinds.Action.PAUSE), "Pause" },
+            { KeyBinds.label(KeyBinds.Action.TOGGLE_CONTROLS), "Hide controls" }
+        };
+    }
     private static final Font CONTROLS_TITLE_FONT = new Font("Serif", Font.BOLD, 13);
     private static final Font CONTROLS_FONT = new Font("Arial", Font.BOLD, 11);
 
@@ -167,7 +174,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
             case RUNNING:
                 updateKeyLocks();
-                if (Keyboard.isKeyDown(Key.H)) {
+                if (KeyBinds.isDown(KeyBinds.Action.TOGGLE_CONTROLS)) {
                     if (!hWasDown) {
                         showControls = !showControls;
                     }
@@ -183,11 +190,11 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                     if (dwarf != null) {
                         dwarf.setShopOpen(shopMenu.isOpen());
                     }
-                    keyLocker.lockKey(Key.ESC);
+                    keyLocker.lockKey(pauseKey());
                     break;
                 }
 
-                if (Keyboard.isKeyDown(Key.ESC) && !keyLocker.isKeyLocked(Key.ESC)) {
+                if (Keyboard.isKeyDown(pauseKey()) && !keyLocker.isKeyLocked(pauseKey())) {
                     openPauseMenu();
                     break;
                 }
@@ -287,7 +294,12 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
     // pause menu
 
+    private static Key pauseKey() {
+        return KeyBinds.get(KeyBinds.Action.PAUSE);
+    }
+
     private void updateKeyLocks() {
+        if (Keyboard.isKeyUp(pauseKey())) keyLocker.unlockKey(pauseKey());
         if (Keyboard.isKeyUp(Key.ESC)) keyLocker.unlockKey(Key.ESC);
         if (Keyboard.isKeyUp(Key.ENTER)) keyLocker.unlockKey(Key.ENTER);
         if (Keyboard.isKeyUp(Key.UP)) keyLocker.unlockKey(Key.UP);
@@ -299,6 +311,8 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     private void openPauseMenu() {
         playLevelScreenState = PlayLevelScreenState.PAUSED;
         pauseSelection = 0;
+        keyBindMenu.close();
+        keyLocker.lockKey(pauseKey());
         keyLocker.lockKey(Key.ESC);
         keyLocker.lockKey(Key.ENTER);
         keyLocker.lockKey(Key.UP);
@@ -309,10 +323,23 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
     private void resumeFromPause() {
         playLevelScreenState = PlayLevelScreenState.RUNNING;
+        keyBindMenu.close();
+        keyLocker.lockKey(pauseKey());
         keyLocker.lockKey(Key.ESC);
     }
 
     private void updatePauseMenu() {
+        // while the Controls screen is up it owns the input, otherwise the key
+        // being bound would also work the pause menu underneath it
+        if (keyBindMenu.isOpen()) {
+            keyBindMenu.update();
+            updateKeyLocks();
+            keyLocker.lockKey(Key.ENTER);
+            keyLocker.lockKey(pauseKey());
+            keyLocker.lockKey(Key.ESC);
+            return;
+        }
+
         updateKeyLocks();
 
         boolean up = (Keyboard.isKeyDown(Key.UP) && !keyLocker.isKeyLocked(Key.UP))
@@ -330,7 +357,10 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             keyLocker.lockKey(Key.S);
         }
 
-        if (Keyboard.isKeyDown(Key.ESC) && !keyLocker.isKeyLocked(Key.ESC)) {
+        boolean leave = (Keyboard.isKeyDown(Key.ESC) && !keyLocker.isKeyLocked(Key.ESC))
+                || (Keyboard.isKeyDown(pauseKey()) && !keyLocker.isKeyLocked(pauseKey()));
+
+        if (leave) {
             resumeFromPause();
         } else if (Keyboard.isKeyDown(Key.ENTER) && !keyLocker.isKeyLocked(Key.ENTER)) {
             keyLocker.lockKey(Key.ENTER);
@@ -343,6 +373,9 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                     resetLevel();
                     break;
                 case 2:
+                    keyBindMenu.open();
+                    break;
+                case 3:
                     goBackToMenu();
                     break;
             }
@@ -350,6 +383,13 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     }
 
     private void drawPauseMenu(GraphicsHandler graphicsHandler) {
+        // the Controls screen replaces the pause menu rather than sitting on top
+        // of it -- two stacked panels left the pause options showing through
+        if (keyBindMenu.isOpen()) {
+            keyBindMenu.draw(graphicsHandler);
+            return;
+        }
+
         int w = ScreenManager.getScreenWidth();
         int h = ScreenManager.getScreenHeight();
 
@@ -449,7 +489,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     private void drawCoinCounter(GraphicsHandler graphicsHandler) {
         int fieldWidth = coinDisplay.fieldWidth(COIN_SLOTS);
         int blockWidth = COIN_ICON_SIZE + COIN_ICON_GAP + fieldWidth;
-        int blockX = Config.GAME_WINDOW_WIDTH - HUD_MARGIN - blockWidth;
+        int blockX = ScreenManager.getScreenWidth() - HUD_MARGIN - blockWidth;
 
         graphicsHandler.drawImage(coinIcon, blockX, HUD_TOP, COIN_ICON_SIZE, COIN_ICON_SIZE);
 
@@ -537,12 +577,13 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         if (!showControls) {
             return;
         }
+        String[][] rows = controlRows();
         FontMetrics keyMetrics = graphicsHandler.getGraphics().getFontMetrics(CONTROLS_FONT);
         FontMetrics titleMetrics = graphicsHandler.getGraphics().getFontMetrics(CONTROLS_TITLE_FONT);
 
         int keyColumn = 0;
         int actionWidth = 0;
-        for (String[] control : CONTROLS) {
+        for (String[] control : rows) {
             keyColumn = Math.max(keyColumn, keyMetrics.stringWidth(control[0]));
             actionWidth = Math.max(actionWidth, keyMetrics.stringWidth(control[1]));
         }
@@ -552,7 +593,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         int rowHeight = keyMetrics.getHeight();
         int titleHeight = titleMetrics.getHeight();
         int width = Math.max(padding * 2 + keyColumn + actionWidth, padding * 2 + titleMetrics.stringWidth("CONTROLS"));
-        int height = padding * 2 + titleHeight + 4 + CONTROLS.length * rowHeight;
+        int height = padding * 2 + titleHeight + 4 + rows.length * rowHeight;
 
         int x = 20;
         int y = 68;
@@ -561,10 +602,10 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         graphicsHandler.drawRectangle(x, y, width, height, new Color(214, 170, 92), 2);
         graphicsHandler.drawString("CONTROLS", x + padding, y + padding + titleMetrics.getAscent(), CONTROLS_TITLE_FONT, new Color(214, 170, 92));
 
-        for (int i = 0; i < CONTROLS.length; i++) {
+        for (int i = 0; i < rows.length; i++) {
             int rowY = y + padding + titleHeight + 4 + i * rowHeight + keyMetrics.getAscent();
-            graphicsHandler.drawString(CONTROLS[i][0], x + padding, rowY, CONTROLS_FONT, new Color(255, 214, 120));
-            graphicsHandler.drawString(CONTROLS[i][1], x + padding + keyColumn, rowY, CONTROLS_FONT, new Color(251, 230, 160));
+            graphicsHandler.drawString(rows[i][0], x + padding, rowY, CONTROLS_FONT, new Color(255, 214, 120));
+            graphicsHandler.drawString(rows[i][1], x + padding + keyColumn, rowY, CONTROLS_FONT, new Color(251, 230, 160));
         }
     }
 

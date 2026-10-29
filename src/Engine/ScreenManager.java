@@ -17,6 +17,13 @@ public class ScreenManager {
         setCurrentScreen(new DefaultScreen());
     }
 
+    public void setScreenSize(int width, int height) {
+        if (width > 0 && height > 0) {
+            screenBounds.setWidth(width);
+            screenBounds.setHeight(height);
+        }
+    }
+
     // attach an external Screen class here for the ScreenManager to start calling its update/draw cycles
     public void setCurrentScreen(Screen screen) {
         screen.initialize();

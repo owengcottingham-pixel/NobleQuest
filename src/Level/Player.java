@@ -2,6 +2,7 @@ package Level;
 
 import Engine.GraphicsHandler;
 import Engine.Key;
+import Engine.KeyBinds;
 import Engine.KeyLocker;
 import Engine.Keyboard;
 import GameObject.GameObject;
@@ -71,7 +72,7 @@ public abstract class Player extends GameObject {
 
     // define keys
     protected KeyLocker keyLocker = new KeyLocker();
-    protected Key JUMP_KEY = Key.W;
+    protected Key JUMP_KEY = Key.SPACE;
     protected Key MOVE_LEFT_KEY = Key.A;
     protected Key MOVE_RIGHT_KEY = Key.D;
     protected Key CROUCH_KEY = Key.S;
@@ -154,7 +155,29 @@ public abstract class Player extends GameObject {
     return lastAmountMovedY;
 }
 
+    // The movement keys below are no longer fixed -- the Controls menu can
+    // change any of them mid-level -- so they are refreshed from KeyBinds at the
+    // top of every frame. A key that has just been rebound is locked straight
+    // away, otherwise still holding it from the menu would fire an instant jump
+    // or swing the moment the game unpauses.
+    private void syncKeyBinds() {
+        MOVE_LEFT_KEY = adopt(MOVE_LEFT_KEY, KeyBinds.get(KeyBinds.Action.MOVE_LEFT));
+        MOVE_RIGHT_KEY = adopt(MOVE_RIGHT_KEY, KeyBinds.get(KeyBinds.Action.MOVE_RIGHT));
+        JUMP_KEY = adopt(JUMP_KEY, KeyBinds.get(KeyBinds.Action.JUMP));
+        CROUCH_KEY = adopt(CROUCH_KEY, KeyBinds.get(KeyBinds.Action.CROUCH));
+        DASH_KEY = adopt(DASH_KEY, KeyBinds.get(KeyBinds.Action.DASH));
+        ATTACK_KEY = adopt(ATTACK_KEY, KeyBinds.get(KeyBinds.Action.ATTACK));
+    }
+
+    private Key adopt(Key current, Key bound) {
+        if (current != bound) {
+            keyLocker.lockKey(bound);
+        }
+        return bound;
+    }
+
     public void update() {
+        syncKeyBinds();
         if (invincibilityTimer > 0) {
             invincibilityTimer--;
         }

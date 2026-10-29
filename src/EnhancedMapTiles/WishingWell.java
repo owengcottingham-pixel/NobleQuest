@@ -5,6 +5,8 @@ import Enemies.Goblin;
 import Engine.GraphicsHandler;
 import Engine.ImageLoader;
 import Engine.Key;
+import Engine.KeyBinds;
+import Engine.KeyPrompt;
 import Engine.KeyLocker;
 import Engine.Keyboard;
 import GameObject.Frame;
@@ -110,7 +112,10 @@ public class WishingWell extends EnhancedMapTile {
     private int denyTimer = 0;
 
     private final KeyLocker keyLocker = new KeyLocker();
-    private final Key INTERACT_KEY = Key.E;
+    // read fresh each frame: the Controls menu can change it mid-level
+    private Key interactKey() {
+        return KeyBinds.get(KeyBinds.Action.INTERACT);
+    }
     private final Random random = new Random();
 
     // motes are tracked relative to the well mouth, so they ride along with the camera
@@ -155,16 +160,16 @@ public class WishingWell extends EnhancedMapTile {
             updateMotes();
         }
 
-        if (Keyboard.isKeyUp(INTERACT_KEY)) {
-            keyLocker.unlockKey(INTERACT_KEY);
+        if (Keyboard.isKeyUp(interactKey())) {
+            keyLocker.unlockKey(interactKey());
         }
 
         switch (state) {
             case IDLE:
                 if (playerNearby
-                        && Keyboard.isKeyDown(INTERACT_KEY)
-                        && !keyLocker.isKeyLocked(INTERACT_KEY)) {
-                    keyLocker.lockKey(INTERACT_KEY);
+                        && Keyboard.isKeyDown(interactKey())
+                        && !keyLocker.isKeyLocked(interactKey())) {
+                    keyLocker.lockKey(interactKey());
                     if (player.spendCoins(COIN_COST)) {
                         startSpin();
                     } else {
@@ -344,9 +349,15 @@ public class WishingWell extends EnhancedMapTile {
 
         // gentle bob, using the two frames of KeyPromptE.png
         int frame = (pulse / 30) % 2;
-        graphicsHandler.drawImage(
-            promptSheet.getSprite(0, frame),
-            px, py, PROMPT_SIZE, PROMPT_SIZE);
+        if (interactKey() == Key.E) {
+            // the painted cap says E, so it is only right while E is the binding
+            graphicsHandler.drawImage(
+                promptSheet.getSprite(0, frame),
+                px, py, PROMPT_SIZE, PROMPT_SIZE);
+        } else {
+            KeyPrompt.draw(graphicsHandler, interactKey(),
+                    px + PROMPT_SIZE / 2, py, PROMPT_SIZE, frame == 1);
+        }
     }
 
     private void drawBeam(GraphicsHandler graphicsHandler, int x, int y, Color colour) {

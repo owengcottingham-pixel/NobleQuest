@@ -84,6 +84,8 @@ public class GamePanel extends JPanel {
 	}
 
 	public void update() {
+		screenManager.setScreenSize(getWidth(), getHeight());
+		Mouse.setCoordinateTransform(1, 0, 0);
 		updatePauseState();
 		updateShowFPSState();
 
@@ -134,10 +136,15 @@ public class GamePanel extends JPanel {
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		if (doPaint) {
-			// every repaint call will schedule this method to be called
-			// when called, it will setup the graphics handler and then call this class's draw method
-			graphicsHandler.setGraphics((Graphics2D) g);
-			draw();
+			Graphics2D panelGraphics = (Graphics2D) g.create();
+			try {
+				screenManager.setScreenSize(getWidth(), getHeight());
+				Mouse.setCoordinateTransform(1, 0, 0);
+				graphicsHandler.setGraphics(panelGraphics);
+				draw();
+			} finally {
+				panelGraphics.dispose();
+			}
 		}
 	}
 }

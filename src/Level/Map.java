@@ -389,6 +389,9 @@ public abstract class Map {
     }
 
     public void update(Player player) {
+        xMidPoint = ScreenManager.getScreenWidth() / 2;
+        yMidPoint = ScreenManager.getScreenHeight() / 2;
+        camera.resizeToScreen();
         if (adjustCamera) {
             adjustMovementY(player);
             adjustMovementX(player);

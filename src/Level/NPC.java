@@ -2,6 +2,7 @@ package Level;
 
 import Engine.GraphicsHandler;
 import Engine.Key;
+import Engine.KeyBinds;
 import Engine.Keyboard;
 import GameObject.Frame;
 import GameObject.SpriteSheet;
@@ -56,7 +57,7 @@ public class NPC extends MapEntity {
     }
 
     public void checkTalkedTo(Player player) {
-        if (isInteractable && intersects(player) && Keyboard.isKeyDown(Key.SPACE)) {
+        if (isInteractable && intersects(player) && KeyBinds.isDown(KeyBinds.Action.TALK)) {
             talkedTo = true;
             if (talkedToTime >= 0) {
                 timer = talkedToTime;
