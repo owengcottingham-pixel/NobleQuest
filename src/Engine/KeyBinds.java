@@ -22,9 +22,13 @@ import java.util.EnumMap;
  * the defaults below are used and the game carries on; losing a key mapping is
  * not worth a crash.
  *
- * Duplicates are allowed on purpose. SPACE is both Jump and Talk out of the box
- * and E is both the shop and the well, which is how the game already played;
- * the menu flags a shared key rather than refusing it.
+ * No two actions may share a key. Binding a key that is already taken swaps the
+ * two actions rather than refusing the change -- refusing would mean clearing
+ * the other one first, and leaving an action unbound is worse than either.
+ *
+ * Talking to an NPC used to be SPACE while the shop and the well were E, which
+ * put Talk on the same key as Jump; they are one action now, so standing next
+ * to someone and jumping no longer starts a conversation.
  */
 public final class KeyBinds {
 
@@ -35,8 +39,7 @@ public final class KeyBinds {
         CROUCH("Crouch", Key.S),
         DASH("Dash", Key.SHIFT),
         ATTACK("Sword", Key.J),
-        TALK("Talk", Key.SPACE),
-        INTERACT("Shop / Well", Key.E),
+        INTERACT("Talk / Shop / Well", Key.E),
         PAUSE("Pause", Key.ESC),
         TOGGLE_CONTROLS("Hide Controls", Key.H);
 
@@ -62,6 +65,7 @@ public final class KeyBinds {
     static {
         restoreDefaults();
         load();
+        resolveDuplicates();
     }
 
     private KeyBinds() {
@@ -72,17 +76,57 @@ public final class KeyBinds {
         return key != null ? key : action.defaultKey;
     }
 
-    public static void set(Action action, Key key) {
+    /*
+     * Binds a key, and returns the action that had to give it up, or null if the
+     * key was free. The displaced action inherits the key this one just left, so
+     * a swap never leaves anything unbound.
+     */
+    public static Action set(Action action, Key key) {
         if (key == null || isReserved(key)) {
-            return;
+            return null;
         }
-        BOUND.put(action, key);
-        save();
+        return assign(action, key);
     }
 
-    public static void reset(Action action) {
-        BOUND.put(action, action.defaultKey);
+    private static Action assign(Action action, Key key) {
+        Key previous = get(action);
+        Action displaced = null;
+        for (Action other : Action.values()) {
+            if (other != action && get(other) == key) {
+                displaced = other;
+                break;
+            }
+        }
+        BOUND.put(action, key);
+        if (displaced != null) {
+            // Normally the displaced action simply inherits the key this one gave
+            // up. Not if that key is Esc: Pause is allowed to sit on Esc, but
+            // handing Esc to Sword would leave Sword firing whenever you tried to
+            // open a menu, and unable to be rebound off it. It gets a free key.
+            Key inherited = previous;
+            if (isReserved(inherited)) {
+                java.util.EnumSet<Key> used = java.util.EnumSet.noneOf(Key.class);
+                for (Action other : Action.values()) {
+                    if (other != displaced) {
+                        used.add(get(other));
+                    }
+                }
+                inherited = firstFreeKey(used);
+            }
+            if (inherited != null) {
+                BOUND.put(displaced, inherited);
+            }
+        }
         save();
+        return displaced;
+    }
+
+    /*
+     * Back to the default, swapping with whoever holds that key now -- the same
+     * rule as set(), so a reset cannot create a duplicate either.
+     */
+    public static Action reset(Action action) {
+        return assign(action, action.defaultKey);
     }
 
     public static void restoreDefaults() {
@@ -102,17 +146,6 @@ public final class KeyBinds {
 
     public static boolean isUp(Action action) {
         return Keyboard.isKeyUp(get(action));
-    }
-
-    // true when some other action answers to the same key
-    public static boolean isShared(Action action) {
-        Key key = get(action);
-        for (Action other : Action.values()) {
-            if (other != action && get(other) == key) {
-                return true;
-            }
-        }
-        return false;
     }
 
     // what to print on a key cap: "Space", "Left Arrow", "1", "A"
@@ -185,6 +218,39 @@ public final class KeyBinds {
                 }
             }
         }
+    }
+
+    /*
+     * Nothing stops someone opening keybinds.cfg in a text editor and putting two
+     * actions on one key, so the file is checked rather than trusted: a clashing
+     * action falls back to its own default, or to the first free key if that is
+     * taken too.
+     */
+    private static void resolveDuplicates() {
+        java.util.EnumSet<Key> taken = java.util.EnumSet.noneOf(Key.class);
+        for (Action action : Action.values()) {
+            Key key = get(action);
+            if (!taken.contains(key)) {
+                taken.add(key);
+                continue;
+            }
+            Key replacement = !taken.contains(action.defaultKey)
+                    ? action.defaultKey
+                    : firstFreeKey(taken);
+            if (replacement != null) {
+                BOUND.put(action, replacement);
+                taken.add(replacement);
+            }
+        }
+    }
+
+    private static Key firstFreeKey(java.util.EnumSet<Key> taken) {
+        for (Key candidate : Key.values()) {
+            if (!isReserved(candidate) && !taken.contains(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     private static void save() {

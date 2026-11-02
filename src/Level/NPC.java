@@ -57,7 +57,7 @@ public class NPC extends MapEntity {
     }
 
     public void checkTalkedTo(Player player) {
-        if (isInteractable && intersects(player) && KeyBinds.isDown(KeyBinds.Action.TALK)) {
+        if (isInteractable && intersects(player) && KeyBinds.isDown(KeyBinds.Action.INTERACT)) {
             talkedTo = true;
             if (talkedToTime >= 0) {
                 timer = talkedToTime;

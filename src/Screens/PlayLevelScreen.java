@@ -132,8 +132,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             { KeyBinds.label(KeyBinds.Action.ATTACK), "Sword" },
             { "Left Click", "Crossbow (aim with mouse)" },
             { KeyBinds.label(KeyBinds.Action.DASH), "Dash" },
-            { KeyBinds.label(KeyBinds.Action.TALK), "Talk" },
-            { KeyBinds.label(KeyBinds.Action.INTERACT), "Shop / Wishing Well" },
+            { KeyBinds.label(KeyBinds.Action.INTERACT), "Talk / Shop / Well" },
             { KeyBinds.label(KeyBinds.Action.PAUSE), "Pause" },
             { KeyBinds.label(KeyBinds.Action.TOGGLE_CONTROLS), "Hide controls" }
         };
