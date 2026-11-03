@@ -22,6 +22,7 @@ import Level.NPC;
 import NPCs.DwarfShopkeeper;
 import Level.Player;
 import Level.PlayerListener;
+import Maps.CloudLevel;
 import Maps.LavaBossLevel;
 import Maps.Level1;
 import Maps.Level2;
@@ -151,6 +152,8 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                 return new Level2();
             case 3:
                 return new LavaBossLevel();
+            case 4:
+                return new CloudLevel();
             default:
                 throw new IllegalStateException("Unknown level: " + currentLevel);
         }

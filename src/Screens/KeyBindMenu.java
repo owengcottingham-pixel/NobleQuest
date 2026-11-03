@@ -26,6 +26,9 @@ import java.util.EnumSet;
  * the bottom says so, because a binding changing on a row you were not looking
  * at is worth telling someone about.
  *
+ * A row can show two keys ("Space / W" for jump). Enter rebinds the MAIN one
+ * and leaves the second alone; R puts both back to their defaults.
+ *
  * Drawn in the pause menu's colours rather than the dwarf shop's, since this is
  * a settings screen and not part of the world.
  */
@@ -260,7 +263,7 @@ public class KeyBindMenu {
                 px + (PANEL_W - hintMetrics.stringWidth(hint)) / 2,
                 py + PANEL_H - 32, SMALL_FONT, FOOTER);
 
-        String reserved = "One key per action -- picking a taken key swaps the two";
+        String reserved = "Enter sets the main key. A key can only do one thing";
         graphicsHandler.drawString(reserved,
                 px + (PANEL_W - hintMetrics.stringWidth(reserved)) / 2,
                 py + PANEL_H - 14, SMALL_FONT, new Color(130, 130, 140));
