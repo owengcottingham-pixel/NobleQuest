@@ -69,11 +69,11 @@ public class MenuScreen extends Screen {
         menuButton = ImageLoader.load("Menubutton.PNG");
         backgroundImage = ImageLoader.load("Background.png");
 
-        // Center logo and button images
+        // Center logo and buttons
         logoX = (screenWidth - logoWidth) / 2;
         buttonX = (screenWidth - buttonWidth) / 2;
 
-        // Measure text to center it
+        // Font settings
         Font menuFont = new Font(
             "Arial",
             Font.PLAIN,
@@ -92,7 +92,6 @@ public class MenuScreen extends Screen {
         int creditsX = (screenWidth -
             metrics.stringWidth("CREDITS")) / 2;
 
-        // Calculate vertical text position
         int textOffset =
             (buttonHeight - metrics.getHeight()) / 2;
 
@@ -200,18 +199,20 @@ public class MenuScreen extends Screen {
 
             if (currentMenuItemHovered == 0) {
 
-                // Start game
+                // PLAY GAME
+                // Open the story intro before Level 1
                 screenCoordinator.setGameState(
-                    GameState.LEVEL
+                    GameState.STORY_INTRO
                 );
 
             } else if (currentMenuItemHovered == 1) {
 
+                // SETTINGS
                 // Settings not implemented yet
 
             } else if (currentMenuItemHovered == 2) {
 
-                // Open credits screen
+                // CREDITS
                 screenCoordinator.setGameState(
                     GameState.CREDITS
                 );
@@ -221,9 +222,10 @@ public class MenuScreen extends Screen {
 
     @Override
     public void draw(GraphicsHandler graphicsHandler) {
+
         layoutMenu();
 
-        // Draw Background.png across entire menu
+        // Draw background across entire screen
         if (backgroundImage != null) {
 
             graphicsHandler.drawImage(
@@ -261,7 +263,7 @@ public class MenuScreen extends Screen {
         // Draw button images behind text
         if (menuButton != null) {
 
-            // PLAY GAME
+            // PLAY GAME button
             graphicsHandler.drawImage(
                 menuButton,
                 buttonX,
@@ -270,7 +272,7 @@ public class MenuScreen extends Screen {
                 buttonHeight
             );
 
-            // SETTINGS
+            // SETTINGS button
             graphicsHandler.drawImage(
                 menuButton,
                 buttonX,
@@ -279,7 +281,7 @@ public class MenuScreen extends Screen {
                 buttonHeight
             );
 
-            // CREDITS
+            // CREDITS button
             graphicsHandler.drawImage(
                 menuButton,
                 buttonX,
@@ -296,41 +298,84 @@ public class MenuScreen extends Screen {
     }
 
     private void layoutMenu() {
+
         screenWidth = ScreenManager.getScreenWidth();
         screenHeight = ScreenManager.getScreenHeight();
+
         if (screenWidth <= 0 || screenHeight <= 0) {
             return;
         }
 
-        float scale = Math.min(screenWidth / 800.0f, screenHeight / 650.0f);
-        float offsetX = (screenWidth - 800 * scale) / 2;
-        float offsetY = (screenHeight - 650 * scale) / 2;
+        float scale = Math.min(
+            screenWidth / 800.0f,
+            screenHeight / 650.0f
+        );
 
+        float offsetX =
+            (screenWidth - 800 * scale) / 2;
+
+        float offsetY =
+            (screenHeight - 650 * scale) / 2;
+
+        // Scale logo
         logoWidth = Math.round(450 * scale);
         logoHeight = Math.round(450 * scale);
+
         logoX = (screenWidth - logoWidth) / 2;
         logoY = Math.round(offsetY - 50 * scale);
 
+        // Scale buttons
         buttonWidth = Math.round(250 * scale);
         buttonHeight = Math.round(150 * scale);
-        buttonX = (screenWidth - buttonWidth) / 2;
-        playButtonY = Math.round(offsetY + 275 * scale);
-        settingsButtonY = Math.round(offsetY + 375 * scale);
-        creditsButtonY = Math.round(offsetY + 475 * scale);
-        fontSize = Math.max(1, Math.round(30 * scale));
 
-        Font menuFont = new Font("Arial", Font.PLAIN, fontSize);
-        FontMetrics metrics = new Canvas().getFontMetrics(menuFont);
-        int textOffset = (buttonHeight - metrics.getHeight()) / 2;
+        buttonX = (screenWidth - buttonWidth) / 2;
+
+        playButtonY =
+            Math.round(offsetY + 275 * scale);
+
+        settingsButtonY =
+            Math.round(offsetY + 375 * scale);
+
+        creditsButtonY =
+            Math.round(offsetY + 475 * scale);
+
+        fontSize = Math.max(
+            1,
+            Math.round(30 * scale)
+        );
+
+        // Update text positions
+        Font menuFont = new Font(
+            "Arial",
+            Font.PLAIN,
+            fontSize
+        );
+
+        FontMetrics metrics =
+            new Canvas().getFontMetrics(menuFont);
+
+        int textOffset =
+            (buttonHeight - metrics.getHeight()) / 2;
 
         playGame.setFontSize(fontSize);
-        playGame.setLocation((screenWidth - metrics.stringWidth("PLAY GAME")) / 2,
-            playButtonY + textOffset);
+        playGame.setLocation(
+            (screenWidth -
+                metrics.stringWidth("PLAY GAME")) / 2,
+            playButtonY + textOffset
+        );
+
         settings.setFontSize(fontSize);
-        settings.setLocation((screenWidth - metrics.stringWidth("SETTINGS")) / 2,
-            settingsButtonY + textOffset);
+        settings.setLocation(
+            (screenWidth -
+                metrics.stringWidth("SETTINGS")) / 2,
+            settingsButtonY + textOffset
+        );
+
         credits.setFontSize(fontSize);
-        credits.setLocation((screenWidth - metrics.stringWidth("CREDITS")) / 2,
-            creditsButtonY + textOffset);
+        credits.setLocation(
+            (screenWidth -
+                metrics.stringWidth("CREDITS")) / 2,
+            creditsButtonY + textOffset
+        );
     }
 }

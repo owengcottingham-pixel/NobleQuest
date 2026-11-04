@@ -12,6 +12,8 @@ import Utils.Direction;
 import EnhancedMapTiles.FallingObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
 
 public abstract class Player extends GameObject {
 
@@ -160,20 +162,76 @@ public abstract class Player extends GameObject {
     // top of every frame. A key that has just been rebound is locked straight
     // away, otherwise still holding it from the menu would fire an instant jump
     // or swing the moment the game unpauses.
+    // the actions whose keys get locked on use and re-armed on release
+    private static final KeyBinds.Action[] REARMED = {
+        KeyBinds.Action.JUMP, KeyBinds.Action.DASH, KeyBinds.Action.ATTACK
+    };
+
+    private static final KeyBinds.Action[] WATCHED = {
+        KeyBinds.Action.MOVE_LEFT, KeyBinds.Action.MOVE_RIGHT, KeyBinds.Action.JUMP,
+        KeyBinds.Action.CROUCH, KeyBinds.Action.DASH, KeyBinds.Action.ATTACK
+    };
+
+    private final EnumMap<KeyBinds.Action, Key[]> lastBinds =
+            new EnumMap<KeyBinds.Action, Key[]>(KeyBinds.Action.class);
+
     private void syncKeyBinds() {
-        MOVE_LEFT_KEY = adopt(MOVE_LEFT_KEY, KeyBinds.get(KeyBinds.Action.MOVE_LEFT));
-        MOVE_RIGHT_KEY = adopt(MOVE_RIGHT_KEY, KeyBinds.get(KeyBinds.Action.MOVE_RIGHT));
-        JUMP_KEY = adopt(JUMP_KEY, KeyBinds.get(KeyBinds.Action.JUMP));
-        CROUCH_KEY = adopt(CROUCH_KEY, KeyBinds.get(KeyBinds.Action.CROUCH));
-        DASH_KEY = adopt(DASH_KEY, KeyBinds.get(KeyBinds.Action.DASH));
-        ATTACK_KEY = adopt(ATTACK_KEY, KeyBinds.get(KeyBinds.Action.ATTACK));
+        // The *_KEY fields are kept pointing at each action's main key so any
+        // code outside this class still works, but the logic below no longer
+        // reads them -- an action can have a second key and a single field
+        // cannot hold both. Use actionDown / actionPressed instead.
+        MOVE_LEFT_KEY = KeyBinds.get(KeyBinds.Action.MOVE_LEFT);
+        MOVE_RIGHT_KEY = KeyBinds.get(KeyBinds.Action.MOVE_RIGHT);
+        JUMP_KEY = KeyBinds.get(KeyBinds.Action.JUMP);
+        CROUCH_KEY = KeyBinds.get(KeyBinds.Action.CROUCH);
+        DASH_KEY = KeyBinds.get(KeyBinds.Action.DASH);
+        ATTACK_KEY = KeyBinds.get(KeyBinds.Action.ATTACK);
+
+        // A key that has only just been bound is locked at once, otherwise
+        // still holding it from the Controls menu fires an instant jump or
+        // swing the moment the game unpauses.
+        for (KeyBinds.Action action : WATCHED) {
+            Key[] now = KeyBinds.keysFor(action);
+            Key[] before = lastBinds.get(action);
+            if (!Arrays.equals(before, now)) {
+                if (before != null) {
+                    for (Key key : now) {
+                        keyLocker.lockKey(key);
+                    }
+                }
+                lastBinds.put(action, now);
+            }
+        }
     }
 
-    private Key adopt(Key current, Key bound) {
-        if (current != bound) {
-            keyLocker.lockKey(bound);
+    /** Any key bound to this action is held. */
+    protected boolean actionDown(KeyBinds.Action action) {
+        return KeyBinds.isDown(action);
+    }
+
+    /** No key bound to this action is held. */
+    protected boolean actionUp(KeyBinds.Action action) {
+        return KeyBinds.isUp(action);
+    }
+
+    /*
+     * A key for this action is held AND has not been consumed yet. Checked per
+     * key rather than per action so that holding one of an action's keys does
+     * not block the other, and so one press is one action.
+     */
+    protected boolean actionPressed(KeyBinds.Action action) {
+        for (Key key : KeyBinds.keysFor(action)) {
+            if (Keyboard.isKeyDown(key) && !keyLocker.isKeyLocked(key)) {
+                return true;
+            }
         }
-        return bound;
+        return false;
+    }
+
+    protected void lockAction(KeyBinds.Action action) {
+        for (Key key : KeyBinds.keysFor(action)) {
+            keyLocker.lockKey(key);
+        }
     }
 
     public void update() {
@@ -197,21 +255,21 @@ public abstract class Player extends GameObject {
             if (attackTimer > 0) {
                 attackTimer--;
             }
-            if (canAttack() && Keyboard.isKeyDown(ATTACK_KEY) && !keyLocker.isKeyLocked(ATTACK_KEY) && attackTimer == 0 && playerState != PlayerState.DASHING) {
+            if (canAttack() && actionPressed(KeyBinds.Action.ATTACK) && attackTimer == 0 && playerState != PlayerState.DASHING) {
                 startAttack();
             }
 
-            if (Keyboard.isKeyDown(DASH_KEY) && !keyLocker.isKeyLocked(DASH_KEY) && playerState != PlayerState.DASHING && dashCooldownTimer == 0 && !(airGroundState == AirGroundState.AIR && airDashUsed)) {
-                keyLocker.lockKey(DASH_KEY);
+            if (actionPressed(KeyBinds.Action.DASH) && playerState != PlayerState.DASHING && dashCooldownTimer == 0 && !(airGroundState == AirGroundState.AIR && airDashUsed)) {
+                lockAction(KeyBinds.Action.DASH);
 
                 attackTimer = 0; // dashing cancels an attack
                 jumpHeld = false;
 
                 float dx = 0, dy = 0;
-                if (Keyboard.isKeyDown(MOVE_LEFT_KEY)) dx -= 1;
-                if (Keyboard.isKeyDown(MOVE_RIGHT_KEY)) dx += 1;
-                if (Keyboard.isKeyDown(JUMP_KEY)) dy -= 1;
-                if (Keyboard.isKeyDown(CROUCH_KEY)) dy += 1;
+                if (actionDown(KeyBinds.Action.MOVE_LEFT)) dx -= 1;
+                if (actionDown(KeyBinds.Action.MOVE_RIGHT)) dx += 1;
+                if (actionDown(KeyBinds.Action.JUMP)) dy -= 1;
+                if (actionDown(KeyBinds.Action.CROUCH)) dy += 1;
 
                 if (airGroundState == AirGroundState.GROUND && dy > 0) dy = 0;
 
@@ -229,7 +287,7 @@ public abstract class Player extends GameObject {
                 else if (dx < 0) facingDirection = Direction.LEFT;
                 dashDirection = facingDirection;
 
-                if (dy < 0) keyLocker.lockKey(JUMP_KEY);
+                if (dy < 0) lockAction(KeyBinds.Action.JUMP);
 
                 if (airGroundState == AirGroundState.AIR) airDashUsed = true;
 
@@ -332,51 +390,51 @@ public abstract class Player extends GameObject {
 
     // player STANDING state logic
     protected void playerStanding() {
-        if (canAttack() && Keyboard.isKeyDown(ATTACK_KEY) && !keyLocker.isKeyLocked(ATTACK_KEY)) {
+        if (canAttack() && actionPressed(KeyBinds.Action.ATTACK)) {
             startAttack();
         }
 
-        else if (Keyboard.isKeyDown(MOVE_LEFT_KEY) || Keyboard.isKeyDown(MOVE_RIGHT_KEY)) {
+        else if (actionDown(KeyBinds.Action.MOVE_LEFT) || actionDown(KeyBinds.Action.MOVE_RIGHT)) {
             playerState = PlayerState.WALKING;
         }
 
-        else if (Keyboard.isKeyDown(JUMP_KEY) && !keyLocker.isKeyLocked(JUMP_KEY)) {
-            keyLocker.lockKey(JUMP_KEY);
+        else if (actionPressed(KeyBinds.Action.JUMP)) {
+            lockAction(KeyBinds.Action.JUMP);
             playerState = PlayerState.JUMPING;
         }
 
-        else if (Keyboard.isKeyDown(CROUCH_KEY)) {
+        else if (actionDown(KeyBinds.Action.CROUCH)) {
             playerState = PlayerState.CROUCHING;
         }
     }
 
     // player WALKING state logic
     protected void playerWalking() {
-        if (canAttack() && Keyboard.isKeyDown(ATTACK_KEY) && !keyLocker.isKeyLocked(ATTACK_KEY)) {
+        if (canAttack() && actionPressed(KeyBinds.Action.ATTACK)) {
             startAttack();
             return;
         }
 
-        if (Keyboard.isKeyDown(MOVE_LEFT_KEY)) {
+        if (actionDown(KeyBinds.Action.MOVE_LEFT)) {
             moveAmountX -= walkSpeed;
             facingDirection = Direction.LEFT;
         }
 
-        else if (Keyboard.isKeyDown(MOVE_RIGHT_KEY)) {
+        else if (actionDown(KeyBinds.Action.MOVE_RIGHT)) {
             moveAmountX += walkSpeed;
             facingDirection = Direction.RIGHT;
         }
 
-        else if (Keyboard.isKeyUp(MOVE_LEFT_KEY) && Keyboard.isKeyUp(MOVE_RIGHT_KEY)) {
+        else if (actionUp(KeyBinds.Action.MOVE_LEFT) && actionUp(KeyBinds.Action.MOVE_RIGHT)) {
             playerState = PlayerState.STANDING;
         }
 
-        if (Keyboard.isKeyDown(JUMP_KEY) && !keyLocker.isKeyLocked(JUMP_KEY)) {
-            keyLocker.lockKey(JUMP_KEY);
+        if (actionPressed(KeyBinds.Action.JUMP)) {
+            lockAction(KeyBinds.Action.JUMP);
             playerState = PlayerState.JUMPING;
         }
 
-        else if (Keyboard.isKeyDown(CROUCH_KEY)) {
+        else if (actionDown(KeyBinds.Action.CROUCH)) {
             playerState = PlayerState.CROUCHING;
         }
     }
@@ -422,7 +480,7 @@ public abstract class Player extends GameObject {
     }
 
     protected void startAttack() {
-        keyLocker.lockKey(ATTACK_KEY);
+        lockAction(KeyBinds.Action.ATTACK);
         attackTimer = 12;
         
     }
@@ -432,7 +490,7 @@ public abstract class Player extends GameObject {
         attackTimer--;
 
         if (attackTimer <= 0) {
-            playerState = Keyboard.isKeyDown(MOVE_LEFT_KEY) || Keyboard.isKeyDown(MOVE_RIGHT_KEY)
+            playerState = actionDown(KeyBinds.Action.MOVE_LEFT) || actionDown(KeyBinds.Action.MOVE_RIGHT)
                     ? PlayerState.WALKING
                     : PlayerState.STANDING;
         }
@@ -454,12 +512,12 @@ public abstract class Player extends GameObject {
 
     // player CROUCHING state logic
     protected void playerCrouching() {
-        if (Keyboard.isKeyUp(CROUCH_KEY)) {
+        if (actionUp(KeyBinds.Action.CROUCH)) {
             playerState = PlayerState.STANDING;
         }
 
-        if (Keyboard.isKeyDown(JUMP_KEY) && !keyLocker.isKeyLocked(JUMP_KEY)) {
-            keyLocker.lockKey(JUMP_KEY);
+        if (actionPressed(KeyBinds.Action.JUMP)) {
+            lockAction(KeyBinds.Action.JUMP);
             playerState = PlayerState.JUMPING;
         }
     }
@@ -485,7 +543,7 @@ public abstract class Player extends GameObject {
 
         else if (airGroundState == AirGroundState.AIR) {
 
-            if (jumpHeld && Keyboard.isKeyUp(JUMP_KEY)) {
+            if (jumpHeld && actionUp(KeyBinds.Action.JUMP)) {
                 jumpHeld = false;
                 if (jumpForce > 0) {
                     jumpForce = jumpForce * jumpCutMultiplier;
@@ -501,13 +559,13 @@ public abstract class Player extends GameObject {
                 }
             }
 
-            if (Keyboard.isKeyDown(MOVE_LEFT_KEY)) {
+            if (actionDown(KeyBinds.Action.MOVE_LEFT)) {
                 moveAmountX -= walkSpeed;
                 facingDirection = Direction.LEFT;
                 currentAnimationName = "JUMP_LEFT";
             }
 
-            else if (Keyboard.isKeyDown(MOVE_RIGHT_KEY)) {
+            else if (actionDown(KeyBinds.Action.MOVE_RIGHT)) {
                 moveAmountX += walkSpeed;
                 facingDirection = Direction.RIGHT;
                 currentAnimationName = "JUMP_RIGHT";
@@ -540,16 +598,16 @@ public abstract class Player extends GameObject {
     }
 
     protected void updateLockedKeys() {
-        if (Keyboard.isKeyUp(JUMP_KEY)) {
-            keyLocker.unlockKey(JUMP_KEY);
-        }
-
-        if (Keyboard.isKeyUp(DASH_KEY)) {
-            keyLocker.unlockKey(DASH_KEY);
-        }
-
-        if (Keyboard.isKeyUp(ATTACK_KEY)) {
-            keyLocker.unlockKey(ATTACK_KEY);
+        // Unlocked per key, not per action. An action can answer to two keys --
+        // jump is Space and W -- and releasing one must not re-arm the other
+        // while it is still held down, or holding W and tapping Space would
+        // give a second jump in mid-air.
+        for (KeyBinds.Action action : REARMED) {
+            for (Key key : KeyBinds.keysFor(action)) {
+                if (Keyboard.isKeyUp(key)) {
+                    keyLocker.unlockKey(key);
+                }
+            }
         }
     }
 
@@ -561,7 +619,7 @@ public abstract class Player extends GameObject {
 
         else if (playerState == PlayerState.WALKING) {
 
-            boolean hasMovementInput = Keyboard.isKeyDown(MOVE_LEFT_KEY) || Keyboard.isKeyDown(MOVE_RIGHT_KEY);
+            boolean hasMovementInput = actionDown(KeyBinds.Action.MOVE_LEFT) || actionDown(KeyBinds.Action.MOVE_RIGHT);
             this.currentAnimationName =
                 hasMovementInput && lastFrameMovedX != 0
                 ? (facingDirection == Direction.RIGHT ? "WALK_RIGHT" : "WALK_LEFT")

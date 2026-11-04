@@ -22,6 +22,13 @@ import java.util.EnumSet;
  * Esc and Enter are never bound to anything -- see KeyBinds.isReserved -- or you
  * could bind jump to Esc and have no way out of this menu afterwards.
  *
+ * Picking a key another action already holds swaps the pair, and the line along
+ * the bottom says so, because a binding changing on a row you were not looking
+ * at is worth telling someone about.
+ *
+ * A row can show two keys ("Space / W" for jump). Enter rebinds the MAIN one
+ * and leaves the second alone; R puts both back to their defaults.
+ *
  * Drawn in the pause menu's colours rather than the dwarf shop's, since this is
  * a settings screen and not part of the world.
  */
@@ -39,7 +46,7 @@ public class KeyBindMenu {
     private static final Color PICKED = new Color(255, 215, 80);
     private static final Color KEY_TEXT = new Color(235, 235, 245);
     private static final Color LISTENING = new Color(120, 230, 150);
-    private static final Color SHARED = new Color(240, 150, 110);
+    private static final Color SWAPPED = new Color(240, 180, 110);
     private static final Color FOOTER = new Color(170, 170, 170);
 
     private static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 30);
@@ -117,9 +124,12 @@ public class KeyBindMenu {
                 startListening();
             }
         } else if (pressed(Key.R) && selected != RESET_ROW) {
-            KeyBinds.reset(ACTIONS[selected]);
-            say(ACTIONS[selected].label + " back to "
-                    + KeyBinds.label(ACTIONS[selected]) + ".");
+            KeyBinds.Action action = ACTIONS[selected];
+            KeyBinds.Action displaced = KeyBinds.reset(action);
+            say(action.label + " back to " + KeyBinds.label(action) + "."
+                    + (displaced != null
+                        ? "   " + displaced.label + " took " + KeyBinds.label(displaced) + "."
+                        : ""));
         } else if (pressed(Key.ESC)) {
             close();
         }
@@ -158,11 +168,14 @@ public class KeyBindMenu {
             }
             if (Keyboard.isKeyDown(key)) {
                 KeyBinds.Action action = ACTIONS[selected];
-                KeyBinds.set(action, key);
+                KeyBinds.Action displaced = KeyBinds.set(action, key);
                 listening = false;
                 keyLocker.lockKey(key);
-                say(action.label + " is now " + KeyBinds.label(key)
-                        + (KeyBinds.isShared(action) ? "  (shared with another action)" : ""));
+                say(action.label + " is now " + KeyBinds.label(key) + "."
+                        + (displaced != null
+                            ? "   " + displaced.label + " swapped to "
+                              + KeyBinds.label(displaced) + "."
+                            : ""));
                 return;
             }
         }
@@ -216,8 +229,7 @@ public class KeyBindMenu {
                     px + PAD, rowY, ROW_FONT, picked ? PICKED : ROW);
 
             String keyText = waiting ? "press a key..." : KeyBinds.label(action);
-            Color keyColour = waiting ? LISTENING
-                    : (KeyBinds.isShared(action) ? SHARED : KEY_TEXT);
+            Color keyColour = waiting ? LISTENING : KEY_TEXT;
             graphicsHandler.drawString(keyText,
                     px + PANEL_W - PAD - rowMetrics.stringWidth(keyText),
                     rowY, ROW_FONT, keyColour);
@@ -238,7 +250,9 @@ public class KeyBindMenu {
             FontMetrics smallMetrics = graphicsHandler.getGraphics().getFontMetrics(SMALL_FONT);
             graphicsHandler.drawString(message,
                     px + (PANEL_W - smallMetrics.stringWidth(message)) / 2,
-                    py + PANEL_H - 56, SMALL_FONT, LISTENING);
+                    py + PANEL_H - 56, SMALL_FONT,
+                    message.indexOf("swapped") >= 0 || message.indexOf("took") >= 0
+                            ? SWAPPED : LISTENING);
         }
 
         String hint = listening
@@ -249,7 +263,7 @@ public class KeyBindMenu {
                 px + (PANEL_W - hintMetrics.stringWidth(hint)) / 2,
                 py + PANEL_H - 32, SMALL_FONT, FOOTER);
 
-        String reserved = "Esc and Enter stay reserved for menus";
+        String reserved = "Enter sets the main key. A key can only do one thing";
         graphicsHandler.drawString(reserved,
                 px + (PANEL_W - hintMetrics.stringWidth(reserved)) / 2,
                 py + PANEL_H - 14, SMALL_FONT, new Color(130, 130, 140));
