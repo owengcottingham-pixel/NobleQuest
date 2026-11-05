@@ -9,6 +9,7 @@ import Utils.Point;
 
 // Walking into the cave completes the level and advances to the next one.
 public class CaveEntrance extends EnhancedMapTile {
+    private boolean enabled = true;
 
     public CaveEntrance(Point location) {
         super(location.x, location.y,
@@ -19,10 +20,14 @@ public class CaveEntrance extends EnhancedMapTile {
                 TileType.PASSABLE);
     }
 
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     @Override
     public void update(Player player) {
         super.update(player);
-        if (intersects(player)) {
+        if (enabled && intersects(player)) {
             player.completeLevel();
         }
     }

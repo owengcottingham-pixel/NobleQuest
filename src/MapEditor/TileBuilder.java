@@ -3,6 +3,7 @@ package MapEditor;
 import Engine.GraphicsHandler;
 import EnhancedMapTiles.Coin;
 import EnhancedMapTiles.DisappearingPlatform;
+import EnhancedMapTiles.LavaBossGate;
 import GameObject.Rectangle;
 import Level.*;
 import Utils.Colors;
@@ -24,6 +25,7 @@ public class TileBuilder extends JPanel {
     private boolean showEnemies;
     private boolean placeDisappearingPlatform;
     private boolean placeCoin;
+    private boolean placeLavaBossGate;
 
     public TileBuilder(SelectedTileIndexHolder controlPanelHolder, JLabel hoveredTileIndexLabel) {
         setBackground(Colors.MAGENTA);
@@ -81,7 +83,11 @@ public class TileBuilder extends JPanel {
 
         if (showEnhancedMapTiles) {
             for (EnhancedMapTile enhancedMapTile : map.getEnhancedMapTiles()) {
-                enhancedMapTile.draw(graphicsHandler);
+                if (enhancedMapTile instanceof LavaBossGate) {
+                    ((LavaBossGate) enhancedMapTile).drawEditorPreview(graphicsHandler);
+                } else {
+                    enhancedMapTile.draw(graphicsHandler);
+                }
             }
         }
 
@@ -147,6 +153,16 @@ public class TileBuilder extends JPanel {
             return;
         }
 
+        if (placeLavaBossGate) {
+            if (!hasLavaBossGateAt(selectedMapTile.getX(), selectedMapTile.getY())) {
+                map.addEditorEnhancedMapTile(new LavaBossGate(
+                    new Utils.Point(selectedMapTile.getX(), selectedMapTile.getY())
+                ));
+            }
+            repaint();
+            return;
+        }
+
         MapTile newMapTile = map.getTileset().getTile(controlPanelHolder.getSelectedTileIndex())
             .build(selectedMapTile.getX(), selectedMapTile.getY());
         newMapTile.setMap(map);
@@ -178,6 +194,17 @@ public class TileBuilder extends JPanel {
     private boolean hasCoinAt(float x, float y) {
         for (EnhancedMapTile tile : map.getEditorEnhancedMapTiles()) {
             if (tile instanceof Coin
+                    && Math.round(tile.getX()) == Math.round(x)
+                    && Math.round(tile.getY()) == Math.round(y)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasLavaBossGateAt(float x, float y) {
+        for (EnhancedMapTile tile : map.getEditorEnhancedMapTiles()) {
+            if (tile instanceof LavaBossGate
                     && Math.round(tile.getX()) == Math.round(x)
                     && Math.round(tile.getY()) == Math.round(y)) {
                 return true;
@@ -247,8 +274,13 @@ public class TileBuilder extends JPanel {
         updatePlacementCursor();
     }
 
+    public void setPlaceLavaBossGate(boolean placeLavaBossGate) {
+        this.placeLavaBossGate = placeLavaBossGate;
+        updatePlacementCursor();
+    }
+
     private void updatePlacementCursor() {
-        setCursor(new Cursor(placeDisappearingPlatform || placeCoin
+        setCursor(new Cursor(placeDisappearingPlatform || placeCoin || placeLavaBossGate
             ? Cursor.CROSSHAIR_CURSOR
             : Cursor.DEFAULT_CURSOR));
     }

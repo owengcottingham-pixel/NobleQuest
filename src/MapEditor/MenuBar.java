@@ -11,6 +11,7 @@ public class MenuBar extends JMenuBar {
     JCheckBoxMenuItem showTriggers;
     JCheckBoxMenuItem placeDisappearingPlatform;
     JCheckBoxMenuItem placeCoin;
+    JCheckBoxMenuItem placeLavaBossGate;
 
     public MenuBar(TileBuilder tileBuilder) {
         options = new JMenu("Options");
@@ -39,6 +40,8 @@ public class MenuBar extends JMenuBar {
                 if (placeDisappearingPlatform.isSelected()) {
                     placeCoin.setSelected(false);
                     tileBuilder.setPlaceCoin(false);
+                    placeLavaBossGate.setSelected(false);
+                    tileBuilder.setPlaceLavaBossGate(false);
                 }
                 if (placeDisappearingPlatform.isSelected() && !tileBuilder.getShowEnhancedMapTiles()) {
                     tileBuilder.setShowEnhancedMapTiles(true);
@@ -56,6 +59,8 @@ public class MenuBar extends JMenuBar {
                 if (placeCoin.isSelected()) {
                     placeDisappearingPlatform.setSelected(false);
                     tileBuilder.setPlaceDisappearingPlatform(false);
+                    placeLavaBossGate.setSelected(false);
+                    tileBuilder.setPlaceLavaBossGate(false);
                     if (!tileBuilder.getShowEnhancedMapTiles()) {
                         tileBuilder.setShowEnhancedMapTiles(true);
                         showEnchancedMapTiles.setSelected(true);
@@ -64,6 +69,25 @@ public class MenuBar extends JMenuBar {
             }
         });
         options.add(placeCoin);
+
+        placeLavaBossGate = new JCheckBoxMenuItem("Place Lava Boss Gate");
+        placeLavaBossGate.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tileBuilder.setPlaceLavaBossGate(placeLavaBossGate.isSelected());
+                if (placeLavaBossGate.isSelected()) {
+                    placeDisappearingPlatform.setSelected(false);
+                    tileBuilder.setPlaceDisappearingPlatform(false);
+                    placeCoin.setSelected(false);
+                    tileBuilder.setPlaceCoin(false);
+                    if (!tileBuilder.getShowEnhancedMapTiles()) {
+                        tileBuilder.setShowEnhancedMapTiles(true);
+                        showEnchancedMapTiles.setSelected(true);
+                    }
+                }
+            }
+        });
+        options.add(placeLavaBossGate);
 
         showTriggers = new JCheckBoxMenuItem("Show Enemies");
         showTriggers.addActionListener(new ActionListener() {

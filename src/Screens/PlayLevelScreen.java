@@ -79,7 +79,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         // define/setup map
         this.map = createCurrentMap();
 
-        //this.map = new LavaBossLevel(); 
+      //this.map = new LavaBossLevel(); 
         Point spawn = map.getPlayerStartPosition();
         if (WanderingMonk.hasCheckpoint(map.getClass().getSimpleName())) {
             spawn = WanderingMonk.getCheckpoint();
@@ -242,8 +242,14 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                             WanderingMonk.clearCheckpoint();
                             showIntroOnInit = true;
                             initialize();
+                        } else if (currentLevel == 3) {
+                            // The Lava Boss level is complete. Start the Cloud level.
+                            currentLevel = 4;
+                            WanderingMonk.clearCheckpoint();
+                            showIntroOnInit = true;
+                            initialize();
                         } else {
-                            // The Lava Boss level is complete. Return to the menu.
+                            // The Cloud level is complete. Return to the menu.
                             goBackToMenu();
                         }
                     }
@@ -442,11 +448,17 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
             // fade the text in over the first half second of the black screen
             int textAlpha = Math.min(255, (elapsed - FADE_OUT_TIME) * 255 / 30);
-            drawCenteredText(graphicsHandler, "Level " + currentLevel + " Cleared!", h / 2 - 40,
+            String completionMessage = currentLevel == 3
+                ? "Boss Cleared! Congratulations!"
+                : "Level " + currentLevel + " Cleared!";
+            drawCenteredText(graphicsHandler, completionMessage, h / 2 - 40,
                 new Font("Arial", Font.BOLD, 44), new Color(255, 255, 255, textAlpha));
             if (currentLevel == 1) {
                 drawCenteredText(graphicsHandler, "Get ready for Level 2...", h / 2 + 30,
                     new Font("Arial", Font.PLAIN, 22), new Color(200, 200, 200, textAlpha));
+            } else if (currentLevel == 2) {
+                drawCenteredText(graphicsHandler, "Warning: A boss fight is coming!", h / 2 + 30,
+                    new Font("Arial", Font.BOLD, 22), new Color(255, 190, 110, textAlpha));
             }
         }
     }
@@ -470,7 +482,8 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         alpha = Math.max(0, Math.min(255, alpha));
 
         graphicsHandler.drawFilledRectangle(0, 0, w, h, new Color(0, 0, 0, alpha));
-        drawCenteredText(graphicsHandler, "Level " + currentLevel, h / 2 - 30,
+        String introTitle = currentLevel == 3 ? "Lava Boss Fight" : "Level " + currentLevel;
+        drawCenteredText(graphicsHandler, introTitle, h / 2 - 30,
             new Font("Arial", Font.BOLD, 56), new Color(255, 255, 255, alpha));
     }
 

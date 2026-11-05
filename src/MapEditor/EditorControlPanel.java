@@ -137,6 +137,11 @@ public class EditorControlPanel extends JPanel {
                     fileWriter.write(" ");
                     fileWriter.write(String.valueOf(enhancedMapTile.getY()));
                     fileWriter.write(" 3 0 6 16 4");
+                } else if (enhancedMapTile instanceof EnhancedMapTiles.LavaBossGate) {
+                    fileWriter.write("\nLAVA_BOSS_GATE ");
+                    fileWriter.write(String.valueOf(enhancedMapTile.getX()));
+                    fileWriter.write(" ");
+                    fileWriter.write(String.valueOf(enhancedMapTile.getY()));
                 }
             }
 
