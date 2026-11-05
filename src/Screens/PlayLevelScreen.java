@@ -80,9 +80,8 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     public void initialize() {
         // define/setup map
         this.map = createCurrentMap();
-        checklist = map.getChecklist();
-
         //this.map = new LavaBossLevel(); 
+        checklist = map.getChecklist();
         Point spawn = map.getPlayerStartPosition();
         if (WanderingMonk.hasCheckpoint(map.getClass().getSimpleName())) {
             spawn = WanderingMonk.getCheckpoint();

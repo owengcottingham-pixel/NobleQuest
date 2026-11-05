@@ -2,6 +2,7 @@ package Players;
 
 import Engine.GraphicsHandler;
 import Engine.ImageLoader;
+import EnhancedMapTiles.Coin;
 import EnhancedMapTiles.LavaBossPlatform;
 import GameObject.Rectangle;
 import Level.Enemy;
@@ -62,16 +63,16 @@ public class CrossbowBolt {
             x = nextX;
             y = nextY;
 
-            if (hitsSurface(map)) {
-                stuck = true;
-                return;
-            }
             for (Enemy enemy : map.getActiveEnemies()) {
                 if (enemy.getMapEntityStatus() != MapEntityStatus.REMOVED && contains(enemy.getBounds())) {
                     enemy.hitByBoltAt(shooter, x, y);
-                    stuck = true;
+                    done = true;
                     return;
                 }
+            }
+            if (hitsSurface(map)) {
+                stuck = true;
+                return;
             }
             for (NPC npc : map.getNPCs()) {
                 if (npc.getMapEntityStatus() != MapEntityStatus.REMOVED && contains(npc.getBounds())) {
@@ -105,6 +106,9 @@ public class CrossbowBolt {
         }
         for (EnhancedMapTile enhancedMapTile : map.getEnhancedMapTiles()) {
             if (enhancedMapTile.getMapEntityStatus() == MapEntityStatus.REMOVED) {
+                continue;
+            }
+            if (enhancedMapTile instanceof Coin) {
                 continue;
             }
             if (enhancedMapTile instanceof LavaBossPlatform) {
