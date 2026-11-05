@@ -94,12 +94,12 @@ public class Level1 extends Map {
 
     public Level1() {
         super("level1_map.txt", new CommonTileset());
-        //this.playerStartPosition = getMapTile(14, 71).getLocation();
+        this.playerStartPosition = getMapTile(14, 71).getLocation();
 
         //this.playerStartPosition = getMapTile(85, 82).getLocation();     // spring gauntlet
         //this.playerStartPosition = getMapTile(151, 35).getLocation();    // top of the chute
         //this.playerStartPosition = getMapTile(286, 23).getLocation();    // just before the chase
-        this.playerStartPosition = getMapTile(384, 23).getLocation();    // just before the arena
+        //this.playerStartPosition = getMapTile(384, 23).getLocation();    // just before the arena
 
         this.background = ImageLoader.load("Background.png");
         Effects.reset();
