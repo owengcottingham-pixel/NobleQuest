@@ -1,6 +1,7 @@
 package EnhancedMapTiles;
 
 import Builders.FrameBuilder;
+import Enemies.LavaBoss;
 import Level.Enemy;
 import Level.EnhancedMapTile;
 import Level.MapEntityStatus;
@@ -19,6 +20,7 @@ public class BossArenaTrigger extends EnhancedMapTile {
     private int timer = 0;
     private boolean triggered = false;
     private boolean bossSpawned = false;
+    private boolean escapeStarted = false;
     private boolean finished = false;
 
     public BossArenaTrigger(Point location, int widthInTiles, int heightInTiles) {
@@ -58,6 +60,17 @@ public class BossArenaTrigger extends EnhancedMapTile {
             bossSpawned = true;
             if (boss != null) {
                 map.addEnemy(boss);
+            }
+        }
+
+        if (bossSpawned && !escapeStarted && boss instanceof LavaBoss
+            && ((LavaBoss) boss).isFinalStageSequenceStarted()) {
+            escapeStarted = true;
+            for (PumpkinGate gate : gates) {
+                gate.open();
+            }
+            for (CaveEntrance caveEntrance : caveEntrances) {
+                caveEntrance.setEnabled(true);
             }
         }
 

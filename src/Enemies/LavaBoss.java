@@ -4,6 +4,7 @@ import Builders.FrameBuilder;
 import Engine.GraphicsHandler;
 import Engine.ImageLoader;
 import Engine.ScreenManager;
+import EnhancedMapTiles.LavaEscapeWall;
 import GameObject.Frame;
 import GameObject.ImageEffect;
 import GameObject.Rectangle;
@@ -44,7 +45,7 @@ public class LavaBoss extends Enemy {
     private static final int SLAM_INTERVAL = 120;
     private static final int STAGE_TWO_ATTACK_INTERVAL = 150;
     private static final int STAGE_THREE_ATTACK_INTERVAL = 135;
-    private static final int STAGE_FOUR_ATTACK_INTERVAL = 120;
+    private static final int FINAL_STAGE_SHAKE_DURATION = 90;
     private static final int WINDUP_DURATION = 90;
     private static final int RECOVERY_DURATION = 24;
     private static final int ENTRANCE_DURATION = 120;
@@ -176,10 +177,17 @@ public class LavaBoss extends Enemy {
     private boolean stageThreeSlamActive;
     private boolean stageThreeSlamReturning;
     private boolean stageThreeSlamLeft;
+    private final float arenaRightBound;
+    private boolean finalStageSequenceStarted;
+    private int finalStageShakeTimer;
+    private float finalStageStartX;
+    private float finalStageStartY;
+    private float finalStageFallSpeed;
 
-    public LavaBoss(Point location) {
+    public LavaBoss(Point location, float arenaRightBound) {
         super(location.x, location.y, createAnimations(), "IDLE");
         entranceTargetY = location.y;
+        this.arenaRightBound = arenaRightBound;
         setY(entranceTargetY + ENTRANCE_START_OFFSET);
         setIsUpdateOffScreen(true);
     }
@@ -349,7 +357,9 @@ public class LavaBoss extends Enemy {
             bossInvulnerabilityTimer--;
         }
         updateBossStage();
-        if (bossStage == BossStage.STAGE_ONE) {
+        if (bossStage == BossStage.STAGE_FOUR) {
+            updateFinalStageSequence();
+        } else if (bossStage == BossStage.STAGE_ONE) {
             if (attackState == AttackState.WAITING) {
                 hoverAbovePlayer(player);
             }
@@ -389,7 +399,7 @@ public class LavaBoss extends Enemy {
                 setCurrentAnimationName("STAGE2_IDLE");
             }
         }
-        if (player.isAttacking() && intersects(player)) {
+        if (bossStage != BossStage.STAGE_FOUR && player.isAttacking() && intersects(player)) {
             takeHit(player);
         }
         if (health > 0 && mapEntityStatus != MapEntityStatus.REMOVED) {
@@ -422,7 +432,33 @@ public class LavaBoss extends Enemy {
             attackTimer = TRANSFORMATION_DURATION;
             bossInvulnerabilityTimer = TRANSFORMATION_DURATION;
         } else {
-            attackTimer = getStageTwoAttackInterval();
+            finalStageSequenceStarted = true;
+            finalStageShakeTimer = FINAL_STAGE_SHAKE_DURATION;
+            finalStageStartX = getX();
+            finalStageStartY = getY();
+        }
+    }
+
+    public boolean isFinalStageSequenceStarted() {
+        return finalStageSequenceStarted;
+    }
+
+    private void updateFinalStageSequence() {
+        if (finalStageShakeTimer > 0) {
+            finalStageShakeTimer--;
+            setLocation(
+                finalStageStartX + ThreadLocalRandom.current().nextInt(-6, 7),
+                finalStageStartY + ThreadLocalRandom.current().nextInt(-4, 5)
+            );
+            return;
+        }
+
+        finalStageFallSpeed = Math.min(20f, finalStageFallSpeed + 0.8f);
+        setLocation(finalStageStartX, getY() + finalStageFallSpeed);
+        if (getY() > map.getHeightPixels() + getHeight()) {
+            float wallX = map.getCamera().getX() + map.getTileset().getScaledSpriteWidth();
+            map.addEnhancedMapTile(new LavaEscapeWall(new Point(wallX, 0), map.getHeight()));
+            mapEntityStatus = MapEntityStatus.REMOVED;
         }
     }
 
@@ -445,8 +481,6 @@ public class LavaBoss extends Enemy {
                 return STAGE_TWO_ATTACK_INTERVAL;
             case STAGE_THREE:
                 return STAGE_THREE_ATTACK_INTERVAL;
-            case STAGE_FOUR:
-                return STAGE_FOUR_ATTACK_INTERVAL;
             default:
                 return SLAM_INTERVAL;
         }
@@ -474,7 +508,10 @@ public class LavaBoss extends Enemy {
                 } else {
                     attackState = AttackState.LAVA_TURNING;
                     attackStateTimer = LAVA_TURN_DURATION;
-                    lavaTargetX = player.getBounds().getX1() + player.getBounds().getWidth() / 2f;
+                    lavaTargetX = clampArenaX(
+                        player.getBounds().getX1() + player.getBounds().getWidth() / 2f,
+                        LAVA_STREAM_WIDTH / 2f
+                    );
                     lavaHitPlayer = false;
                 }
                 if (bossStage != BossStage.STAGE_THREE) {
@@ -521,7 +558,10 @@ public class LavaBoss extends Enemy {
             rockX = rockHandX;
             rockY = rockHandY + HAND_HEIGHT * SPRITE_SCALE * 0.2f;
             if (rockHandX == rockHandHomeX && rockHandY == rockHandHomeY) {
-                float targetX = player.getBounds().getX1() + player.getBounds().getWidth() / 2f;
+                float targetX = clampArenaX(
+                    player.getBounds().getX1() + player.getBounds().getWidth() / 2f,
+                    ROCK_RADIUS
+                );
                 float targetY = player.getBounds().getY1() + player.getBounds().getHeight() / 2f;
                 float flightFrames = Math.max(24f, Math.min(65f, Math.abs(targetX - rockX) / 8f));
                 rockVelocityX = (targetX - rockX) / flightFrames;
@@ -560,15 +600,18 @@ public class LavaBoss extends Enemy {
     private void beginRockAttack() {
         attackState = AttackState.ROCK_GOING_TO_WALL;
         rockGrabFacingRight = stageTwoFacingRight;
-        rockHandHomeX = getX() + getWidth() / 2f
-            + (rockGrabFacingRight ? getWidth() * 0.62f : -getWidth() * 0.62f);
+        rockHandHomeX = clampArenaX(
+            getX() + getWidth() / 2f
+                + (rockGrabFacingRight ? getWidth() * 0.62f : -getWidth() * 0.62f),
+            Math.max(ROCK_RADIUS, HAND_WIDTH * SPRITE_SCALE / 2f)
+        );
         rockHandHomeY = getY() + getHeight() * 0.72f;
         rockHandX = rockHandHomeX;
         rockHandY = rockHandHomeY;
         float tileWidth = map.getTileset().getScaledSpriteWidth();
-        rockWallX = rockHandHomeX < map.getWidthPixels() / 2f
+        rockWallX = rockHandHomeX < getArenaRightBound() / 2f
             ? tileWidth + ROCK_RADIUS
-            : map.getWidthPixels() - tileWidth - ROCK_RADIUS;
+            : getArenaRightBound() - tileWidth - ROCK_RADIUS;
         rockWallY = findGroundY(rockWallX)
             - ROCK_RADIUS
             - HAND_HEIGHT * SPRITE_SCALE * 0.2f;
@@ -582,12 +625,9 @@ public class LavaBoss extends Enemy {
         crownHomeY = getY() + getHeight() * 0.12f;
         crownX = crownHomeX;
         crownY = crownHomeY;
-        crownTargetX = Math.max(
-            handWidth,
-            Math.min(
-                player.getBounds().getX1() + player.getBounds().getWidth() / 2f,
-                map.getWidthPixels() - handWidth
-            )
+        crownTargetX = clampArenaX(
+            player.getBounds().getX1() + player.getBounds().getWidth() / 2f,
+            getCrownDisplayWidth() / 2f
         );
         crownHandHomeX = getHandX(true, handWidth);
         crownHandHomeY = getY() + 90;
@@ -792,10 +832,13 @@ public class LavaBoss extends Enemy {
             return;
         }
 
-        int targetColumn = Math.max(0, Math.min((int) (lavaTargetX / tileWidth), map.getWidth() - 1));
+        int maxArenaColumn = getLastArenaTileColumn(tileWidth);
+        int targetColumn = Math.max(0, Math.min((int) (lavaTargetX / tileWidth), maxArenaColumn));
         int row = Math.max(0, Math.min((int) (findGroundY(lavaTargetX) / tileHeight), map.getHeight() - 1));
-        for (int column = targetColumn - 1; column <= targetColumn + 1; column++) {
-            if (column < 0 || column >= map.getWidth()) {
+        for (int column = Math.max(0, targetColumn - 1);
+             column <= Math.min(targetColumn + 1, maxArenaColumn);
+             column++) {
+            if (column >= map.getWidth()) {
                 continue;
             }
 
@@ -827,10 +870,13 @@ public class LavaBoss extends Enemy {
 
         int tileWidth = map.getTileset().getScaledSpriteWidth();
         int tileHeight = map.getTileset().getScaledSpriteHeight();
+        int maxArenaColumn = getLastArenaTileColumn(tileWidth);
         int row = Math.max(0, Math.min((int) (findGroundY(crownTargetX) / tileHeight), map.getHeight() - 1));
-        int targetColumn = Math.max(0, Math.min((int) (crownTargetX / tileWidth), map.getWidth() - 1));
-        for (int column = targetColumn - 3; column <= targetColumn + 3; column++) {
-            if (column < 0 || column >= map.getWidth()) {
+        int targetColumn = Math.max(0, Math.min((int) (crownTargetX / tileWidth), maxArenaColumn));
+        for (int column = Math.max(0, targetColumn - 3);
+             column <= Math.min(targetColumn + 3, maxArenaColumn);
+             column++) {
+            if (column >= map.getWidth()) {
                 continue;
             }
 
@@ -881,14 +927,16 @@ public class LavaBoss extends Enemy {
             ROCK_RADIUS * 2,
             ROCK_RADIUS * 2
         );
+        if (rockX - ROCK_RADIUS < 0 || rockX + ROCK_RADIUS > getArenaRightBound()) {
+            rockActive = false;
+            return;
+        }
         if (rockBounds.intersects(player.getBounds())) {
             player.damage(1);
             rockActive = false;
             return;
         }
-        if (rockY + ROCK_RADIUS >= findGroundY(rockX)
-            || rockX < 0
-            || rockX > map.getWidthPixels()) {
+        if (rockY + ROCK_RADIUS >= findGroundY(rockX)) {
             rockActive = false;
         }
     }
@@ -927,7 +975,10 @@ public class LavaBoss extends Enemy {
         float tileWidth = map.getTileset().getScaledSpriteWidth();
         float playerCenterX = player.getBounds().getX1() + player.getBounds().getWidth() / 2f;
         float targetX = playerCenterX - getWidth() / 2f;
-        targetX = Math.max(tileWidth, Math.min(targetX, map.getWidthPixels() - getWidth() - tileWidth));
+        targetX = Math.max(
+            tileWidth,
+            Math.min(targetX, getArenaRightBound() - getWidth() - tileWidth)
+        );
         moveTowards(targetX, getY(), MOVE_SPEED, MOVE_SPEED);
 
         float groundY = findGroundY(getX() + getWidth() / 2f);
@@ -1062,7 +1113,7 @@ public class LavaBoss extends Enemy {
         if (attackState == AttackState.SLIDING) {
             float tileWidth = map.getTileset().getScaledSpriteWidth();
             float minX = tileWidth;
-            float maxX = Math.max(minX, map.getWidthPixels() - tileWidth - handWidth);
+            float maxX = Math.max(minX, getArenaRightBound() - tileWidth - handWidth);
             float targetX = leftHandIsAttacking ? maxX : minX;
             float distance = targetX - slidingHandX;
             slidingHandX += Math.signum(distance) * Math.min(Math.abs(distance), HAND_SLIDE_SPEED);
@@ -1138,7 +1189,7 @@ public class LavaBoss extends Enemy {
         headHomeY = getY();
         float tileWidth = map.getTileset().getScaledSpriteWidth();
         float minX = tileWidth;
-        float maxX = Math.max(minX, map.getWidthPixels() - tileWidth - getWidth());
+        float maxX = Math.max(minX, getArenaRightBound() - tileWidth - getWidth());
         if (headSweepRightNext) {
             headSweepStartX = minX;
             headSweepTargetX = maxX;
@@ -1187,7 +1238,7 @@ public class LavaBoss extends Enemy {
         float x = leftHand ? getX() - handWidth - 20 : getX() + getWidth() + 20;
         float tileWidth = map.getTileset().getScaledSpriteWidth();
         float minX = tileWidth;
-        float maxX = Math.max(minX, map.getWidthPixels() - tileWidth - handWidth);
+        float maxX = Math.max(minX, getArenaRightBound() - tileWidth - handWidth);
         return Math.max(minX, Math.min(x, maxX));
     }
 
@@ -1205,7 +1256,8 @@ public class LavaBoss extends Enemy {
         }
 
         int tileWidth = map.getTileset().getScaledSpriteWidth();
-        int impactColumn = Math.max(0, Math.min((int) (impactX / tileWidth), map.getWidth() - 1));
+        int maxArenaColumn = getLastArenaTileColumn(tileWidth);
+        int impactColumn = Math.max(0, Math.min((int) (impactX / tileWidth), maxArenaColumn));
 
         for (int distance = 0; distance <= TILE_WAVE_RADIUS; distance++) {
             for (int direction : new int[] {-1, 1}) {
@@ -1213,7 +1265,7 @@ public class LavaBoss extends Enemy {
                     continue;
                 }
                 int column = impactColumn + direction * distance;
-                if (column < 0 || column >= map.getWidth()) {
+                if (column < 0 || column > maxArenaColumn || column >= map.getWidth()) {
                     continue;
                 }
 
@@ -1296,7 +1348,10 @@ public class LavaBoss extends Enemy {
 
     private float findGroundY(float x) {
         float tileWidth = map.getTileset().getScaledSpriteWidth();
-        int column = Math.max(0, Math.min((int) (x / tileWidth), map.getWidth() - 1));
+        int column = Math.max(
+            0,
+            Math.min((int) (clampArenaX(x, 1f) / tileWidth), getLastArenaTileColumn(tileWidth))
+        );
 
         float groundY = map.getHeightPixels();
         for (int row = map.getHeight() - 1; row >= 0; row--) {
@@ -1308,6 +1363,23 @@ public class LavaBoss extends Enemy {
             }
         }
         return groundY;
+    }
+
+    private float getArenaRightBound() {
+        return map == null ? arenaRightBound : Math.min(arenaRightBound, map.getWidthPixels());
+    }
+
+    private float clampArenaX(float x, float margin) {
+        float minX = map.getTileset().getScaledSpriteWidth();
+        float maxX = Math.max(minX, getArenaRightBound() - margin);
+        return Math.max(minX, Math.min(x, maxX));
+    }
+
+    private int getLastArenaTileColumn(float tileWidth) {
+        return Math.min(
+            map.getWidth() - 1,
+            (int) Math.ceil(getArenaRightBound() / tileWidth) - 1
+        );
     }
 
     private static final class TileBounce {
@@ -1356,7 +1428,11 @@ public class LavaBoss extends Enemy {
     }
 
     private void takeHit(Player player) {
-        if (health <= 0 || hitCooldown > 0 || isHeadAwayFromStart() || bossInvulnerabilityTimer > 0) {
+        if (bossStage == BossStage.STAGE_FOUR
+            || health <= 0
+            || hitCooldown > 0
+            || isHeadAwayFromStart()
+            || bossInvulnerabilityTimer > 0) {
             return;
         }
 
