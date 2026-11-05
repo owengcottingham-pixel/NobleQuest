@@ -140,6 +140,11 @@ public class EditorControlPanel extends JPanel {
                 } else if (enhancedMapTile instanceof Level.EditorObject) {
                     // spikes, springs, the spiked ball... (see Level.EditorObjects)
                     fileWriter.write("\n" + ((Level.EditorObject) enhancedMapTile).editorLine());
+                } else if (enhancedMapTile instanceof EnhancedMapTiles.LavaBossGate) {
+                    fileWriter.write("\nLAVA_BOSS_GATE ");
+                    fileWriter.write(String.valueOf(enhancedMapTile.getX()));
+                    fileWriter.write(" ");
+                    fileWriter.write(String.valueOf(enhancedMapTile.getY()));
                 }
             }
 

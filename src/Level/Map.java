@@ -3,6 +3,7 @@ package Level;
 import Engine.Config;
 import Engine.GraphicsHandler;
 import Engine.ScreenManager;
+import EnhancedMapTiles.LavaBossGate;
 import Utils.Point;
 
 import java.io.File;
@@ -182,6 +183,13 @@ public abstract class Map {
                 EnhancedMapTile coin = new EnhancedMapTiles.Coin(x, y);
                 coin.setMap(this);
                 editorEnhancedMapTiles.add(coin);
+            } else if (objectType.equals("LAVA_BOSS_GATE")) {
+                float x = fileInput.nextFloat();
+                float y = fileInput.nextFloat();
+
+                EnhancedMapTile gate = new LavaBossGate(new Point(x, y));
+                gate.setMap(this);
+                editorEnhancedMapTiles.add(gate);
             } else {
                 // the rest of the objects the editor can place (spikes, springs...): see EditorObjects.
                 // A line that isn't one of them is skipped, so older/newer files still load.

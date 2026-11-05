@@ -21,8 +21,12 @@ public class PumpkinGate extends EnhancedMapTile {
     private float amountDown = 0;              
 
     public PumpkinGate(Point location) {
+        this(location, ImageLoader.load("PumpkinGate.png"));
+    }
+
+    protected PumpkinGate(Point location, BufferedImage image) {
         super(location.x, location.y,
-                new FrameBuilder(ImageLoader.load("PumpkinGate.png")).withScale(3).build(),
+                new FrameBuilder(image).withScale(3).build(),
                 TileType.PASSABLE);
         setIsUpdateOffScreen(true);  
     }

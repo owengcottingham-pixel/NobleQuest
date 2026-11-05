@@ -127,8 +127,8 @@ public abstract class Player extends GameObject {
         }
     }
 
-    // hurts the player if they are touching any spike tile placed in the map editor
-    private void checkSpikeTiles() {
+    // hurts the player when they touch a damaging tile
+    private void checkHazardTiles() {
         if (map == null) {
             return;
         }
@@ -141,9 +141,18 @@ public abstract class Player extends GameObject {
         for (int x = x1; x <= x2 + step; x += step) {
             for (int y = y1; y <= y2 + step; y += step) {
                 MapTile tile = map.getTileByPosition(Math.min(x, x2), Math.min(y, y2));
-                if (tile != null && tile.getTileType() == TileType.SPIKES && tile.intersects(this)) {
-                    damage(3); // 5 health, so two hits kills
-                    return;
+                if (tile != null && tile.intersects(this)) {
+                    if (tile.getTileType() == TileType.SPIKES) {
+                        damage(3);
+                        return;
+                    }
+                    if (tile.getTileType() == TileType.LAVA) {
+                        if (!isHurtInvincible()) {
+                            damage(1);
+                            bounce(18f);
+                        }
+                        return;
+                    }
                 }
             }
         }
@@ -331,7 +340,7 @@ public abstract class Player extends GameObject {
             
             lastAmountMovedY = super.moveYHandleCollision(moveAmountY);
 
-            checkSpikeTiles();
+            checkHazardTiles();
 
             if (map != null && getBounds().getY1() > map.getEndBoundY()) {
                 levelState = LevelState.PLAYER_DEAD;

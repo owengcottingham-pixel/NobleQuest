@@ -107,6 +107,10 @@ public class GameObject extends AnimatedSprite {
         }
     }
 
+    public boolean canLandOnJumpThroughPlatforms() {
+        return true;
+    }
+
     // performs collision check logic for moving along the x axis against the map's tiles
     private float handleCollisionX(float moveAmountX) {
         // determines amount to move (whole number)

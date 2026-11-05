@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 public class BossArenaTrigger extends EnhancedMapTile {
     private final ArrayList<PumpkinGate> gates = new ArrayList<>();
+    private final ArrayList<CaveEntrance> caveEntrances = new ArrayList<>();
     private Enemy boss;
     private int entranceDelay = 35;   // frames between the gates slamming and the boss showing up
     private int timer = 0;
@@ -31,6 +32,10 @@ public class BossArenaTrigger extends EnhancedMapTile {
 
     public void addGate(PumpkinGate gate) {
         gates.add(gate);
+    }
+
+    public void addCaveEntrance(CaveEntrance caveEntrance) {
+        caveEntrances.add(caveEntrance);
     }
 
     public void setBoss(Enemy boss) {
@@ -60,6 +65,9 @@ public class BossArenaTrigger extends EnhancedMapTile {
             finished = true;
             for (PumpkinGate gate : gates) {
                 gate.open();
+            }
+            for (CaveEntrance caveEntrance : caveEntrances) {
+                caveEntrance.setEnabled(true);
             }
         }
     }

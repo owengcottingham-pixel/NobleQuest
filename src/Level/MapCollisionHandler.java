@@ -108,6 +108,10 @@ public class MapCollisionHandler {
         // collision is determined based on tile type
         if (mapEntity instanceof MapTile) {
             MapTile mapTile = (MapTile)mapEntity;
+            if (mapTile.getTileType() == TileType.JUMP_THROUGH_PLATFORM
+                && !gameObject.canLandOnJumpThroughPlatforms()) {
+                return false;
+            }
             switch (mapTile.getTileType()) {
                 case PASSABLE:
                     return false;
@@ -118,6 +122,7 @@ public class MapCollisionHandler {
                     return direction == Direction.DOWN && gameObject.intersects(mapTile) &&
                             Math.round(gameObject.getBounds().getY2()) == Math.round(mapTile.getBounds().getY1());
                 case WATER:
+                case LAVA:
                     return false;
                 case SLOPE:
                     // slopes have special collision logic that is handled elsewhere -- they are technically not considered "solid" by the game

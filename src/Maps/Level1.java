@@ -286,7 +286,7 @@ public class Level1 extends Map {
         bossTrigger.setBoss(new Gourdzilla(tile(407, 21)));
         tiles.add(bossTrigger);
 
-        tiles.add(new CaveEntrance(tile(435, 22), 2, 2));
+        tiles.add(new CaveEntrance(tile(436, 20)));
 
         return tiles;
     }

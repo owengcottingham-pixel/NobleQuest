@@ -81,7 +81,9 @@ public class CrossbowBolt {
             return true;
         }
         for (EnhancedMapTile enhancedMapTile : map.getActiveEnhancedMapTiles()) {
-            if (enhancedMapTile.getTileType() == TileType.NOT_PASSABLE && contains(enhancedMapTile.getBounds())) {
+            if ((enhancedMapTile.getTileType() == TileType.NOT_PASSABLE
+                || enhancedMapTile.getTileType() == TileType.JUMP_THROUGH_PLATFORM)
+                && contains(enhancedMapTile.getBounds())) {
                 return true;
             }
         }
