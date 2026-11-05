@@ -9,24 +9,28 @@ import Level.EnhancedMapTile;
 import Level.Map;
 import Level.MapEntityStatus;
 import Level.MapTile;
+import Level.NPC;
 import Level.Player;
 import Level.TileType;
 
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class CrossbowBolt {
     private static final BufferedImage IMAGE = ImageLoader.load("CrossbowBolt.png");
-    private static final int MAX_LIFE = 50;       // range: 50 frames x 16px = 800px
-    private static final int STUCK_TIME = 40;     // how long it stays stuck in a wall
+    private static final int PICKUP_RADIUS = 8;
 
     private float x, y;                           // the tip of the bolt
     private final float velocityX, velocityY;
     private final double angle;
-    private int life = MAX_LIFE;
-    private int stuckTimer = 0;
+    private boolean stuck = false;
     private boolean done = false;
+
+    public enum PickupResult {
+        NONE, RECOVERED, BROKEN
+    }
 
     public CrossbowBolt(float x, float y, float velocityX, float velocityY) {
         this.x = x;
@@ -41,40 +45,60 @@ public class CrossbowBolt {
     }
 
     public void update(Map map, Player shooter) {
-        if (stuckTimer > 0) {
-            if (--stuckTimer == 0) done = true;
-            return;
-        }
-        if (--life <= 0) {
-            done = true;
+        if (stuck) {
             return;
         }
 
         // Check each pixel so fast bolts cannot tunnel through thin platform art.
-        int steps = (int) Math.ceil(Math.max(Math.abs(velocityX), Math.abs(velocityY)));
+        int steps = Math.max(1, (int) Math.ceil(Math.max(Math.abs(velocityX), Math.abs(velocityY))));
         for (int i = 0; i < steps; i++) {
-            x += velocityX / steps;
-            y += velocityY / steps;
+            float nextX = x + velocityX / steps;
+            float nextY = y + velocityY / steps;
 
-            if (map.getTileByPosition(x, y) == null) {
-                done = true;
+            if (map.getTileByPosition(nextX, nextY) == null) {
+                stuck = true;
                 return;
             }
-            if (hitsWall(map)) {
-                stuckTimer = STUCK_TIME;
+            x = nextX;
+            y = nextY;
+
+            if (hitsSurface(map)) {
+                stuck = true;
                 return;
             }
             for (Enemy enemy : map.getActiveEnemies()) {
-                if (enemy.getMapEntityStatus() != MapEntityStatus.REMOVED && contains(enemy.getBounds())
-                        && enemy.hitByBoltAt(shooter, x, y)) {
-                    done = true;
+                if (enemy.getMapEntityStatus() != MapEntityStatus.REMOVED && contains(enemy.getBounds())) {
+                    enemy.hitByBoltAt(shooter, x, y);
+                    stuck = true;
+                    return;
+                }
+            }
+            for (NPC npc : map.getNPCs()) {
+                if (npc.getMapEntityStatus() != MapEntityStatus.REMOVED && contains(npc.getBounds())) {
+                    stuck = true;
                     return;
                 }
             }
         }
     }
 
-    private boolean hitsWall(Map map) {
+    public boolean isStuck() {
+        return stuck;
+    }
+
+    public PickupResult tryPickup(Player player) {
+        if (!stuck || !new Rectangle(x - PICKUP_RADIUS, y - PICKUP_RADIUS,
+                PICKUP_RADIUS * 2, PICKUP_RADIUS * 2).intersects(player.getBounds())) {
+            return PickupResult.NONE;
+        }
+
+        done = true;
+        return ThreadLocalRandom.current().nextInt(100) < 15
+                ? PickupResult.BROKEN
+                : PickupResult.RECOVERED;
+    }
+
+    private boolean hitsSurface(Map map) {
         MapTile tile = map.getTileByPosition(x, y);
         if (tile.getTileType() == TileType.NOT_PASSABLE) {
             return true;
@@ -83,13 +107,13 @@ public class CrossbowBolt {
             if (enhancedMapTile.getMapEntityStatus() == MapEntityStatus.REMOVED) {
                 continue;
             }
-            if (enhancedMapTile instanceof LavaBossPlatform
-                && ((LavaBossPlatform) enhancedMapTile).containsVisiblePixel(x, y)) {
-                return true;
+            if (enhancedMapTile instanceof LavaBossPlatform) {
+                if (((LavaBossPlatform) enhancedMapTile).containsVisiblePixel(x, y)) {
+                    return true;
+                }
+                continue;
             }
-            if ((enhancedMapTile.getTileType() == TileType.NOT_PASSABLE
-                || enhancedMapTile.getTileType() == TileType.JUMP_THROUGH_PLATFORM)
-                && contains(enhancedMapTile.getBounds())) {
+            if (contains(enhancedMapTile.getBounds())) {
                 return true;
             }
         }

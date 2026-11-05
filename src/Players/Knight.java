@@ -1,6 +1,7 @@
 package Players;
 
 import Builders.FrameBuilder;
+import Engine.Config;
 import Engine.GraphicsHandler;
 import Engine.ImageLoader;
 import Engine.Mouse;
@@ -12,6 +13,9 @@ import Level.Player;
 import Utils.Direction;
 
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.ArrayList;
 
@@ -49,16 +53,31 @@ public class Knight extends Player {
     private static final int SHOOT_TIME = 26;      // the SHOOT animation
     private static final int RELEASE_AT = 18;      // bolt flies on frame 1 of SHOOT, after 8 frames of aiming
     private static final float BOLT_SPEED = 16f;
+    private static final int MAX_ARROWS = 5;
+    private static final int ARROW_RECHARGE_TICKS = 60 * Config.TARGET_FPS;
+    private static final Font ARROW_COUNT_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 16);
+    private static final Font BROKEN_POPUP_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 13);
+    private static final BufferedImage ARROW_ICON = ImageLoader.load("Arrow.png", new Color(0, 0, 0, 0));
+    private static final int ARROW_ICON_SIZE = 16;
+    private static final int ARROW_ICON_GAP = 4;
+    private static final int BROKEN_POPUP_DURATION = Config.TARGET_FPS;
     private int shootTimer = 0;
+    private int arrows = MAX_ARROWS;
+    private int arrowRechargeTimer = 0;
+    private int brokenPopupTimer = 0;
     private Direction aimSide = Direction.RIGHT;
     private final ArrayList<CrossbowBolt> bolts = new ArrayList<>();
 
     @Override
     public void update() {
         if (levelState == LevelState.RUNNING) {
+            if (brokenPopupTimer > 0) {
+                brokenPopupTimer--;
+            }
+            updateArrowRecharge();
             if (playerState == Player.PlayerState.DASHING || isAttacking()) {
                 shootTimer = 0;                    // dashing or the sword cancels a shot
-            } else if (shootTimer == 0 && Mouse.isLeftDown()) {
+            } else if (shootTimer == 0 && Mouse.isLeftDown() && arrows > 0) {
                 shootTimer = SHOOT_TIME;           // holding the button keeps firing
             }
             if (shootTimer > 0) {
@@ -73,14 +92,43 @@ public class Knight extends Player {
         super.update();
 
         for (int i = bolts.size() - 1; i >= 0; i--) {
-            bolts.get(i).update(map, this);
-            if (bolts.get(i).isDone()) {
+            CrossbowBolt bolt = bolts.get(i);
+            boolean wasStuck = bolt.isStuck();
+            bolt.update(map, this);
+            if (wasStuck && arrows < MAX_ARROWS) {
+                CrossbowBolt.PickupResult pickupResult = bolt.tryPickup(this);
+                if (pickupResult == CrossbowBolt.PickupResult.RECOVERED) {
+                    arrows++;
+                    if (arrows == MAX_ARROWS) {
+                        arrowRechargeTimer = 0;
+                    }
+                } else if (pickupResult == CrossbowBolt.PickupResult.BROKEN) {
+                    brokenPopupTimer = BROKEN_POPUP_DURATION;
+                }
+            }
+            if (bolt.isDone()) {
                 bolts.remove(i);
             }
         }
     }
 
+    private void updateArrowRecharge() {
+        if (arrows == MAX_ARROWS) {
+            arrowRechargeTimer = 0;
+            return;
+        }
+
+        if (++arrowRechargeTimer >= ARROW_RECHARGE_TICKS) {
+            arrows++;
+            arrowRechargeTimer = 0;
+        }
+    }
+
     private void fireBolt() {
+        if (arrows == 0) {
+            return;
+        }
+
         // the crossbow tip in the SHOOT frames (mirrored when facing left)
         float tipX = getX() + (aimSide == Direction.RIGHT ? 86 : 26);
         float tipY = getY() + 41;
@@ -93,6 +141,7 @@ public class Knight extends Player {
             length = 1;
         }
         bolts.add(new CrossbowBolt(tipX, tipY, dx / length * BOLT_SPEED, dy / length * BOLT_SPEED));
+        arrows--;
     }
 
     // the mouse is in screen pixels, so add the camera to get the spot on the map
@@ -116,9 +165,35 @@ public class Knight extends Player {
     @Override
     public void draw(GraphicsHandler graphicsHandler) {
         super.draw(graphicsHandler);
+        drawArrowCount(graphicsHandler);
+        drawBrokenPopup(graphicsHandler);
         for (CrossbowBolt bolt : bolts) {
             bolt.draw(graphicsHandler, map);
         }
+    }
+
+    private void drawArrowCount(GraphicsHandler graphicsHandler) {
+        String text = arrows + "/" + MAX_ARROWS;
+        int screenX = Math.round(getBounds().getX1() + getBounds().getWidth() / 2f - map.getCamera().getX());
+        int screenY = Math.round(getBounds().getY1() - map.getCamera().getY() - 6);
+        int textWidth = graphicsHandler.getGraphics().getFontMetrics(ARROW_COUNT_FONT).stringWidth(text);
+        int totalWidth = ARROW_ICON_SIZE + ARROW_ICON_GAP + textWidth;
+        int iconX = screenX - totalWidth / 2;
+        int textX = iconX + ARROW_ICON_SIZE + ARROW_ICON_GAP;
+        graphicsHandler.drawImage(ARROW_ICON, iconX, screenY - ARROW_ICON_SIZE + 2, ARROW_ICON_SIZE, ARROW_ICON_SIZE);
+        graphicsHandler.drawStringWithOutline(text, textX, screenY, ARROW_COUNT_FONT, Color.WHITE, Color.BLACK, 2f);
+    }
+
+    private void drawBrokenPopup(GraphicsHandler graphicsHandler) {
+        if (brokenPopupTimer <= 0) {
+            return;
+        }
+
+        int screenX = Math.round(getBounds().getX1() + getBounds().getWidth() / 2f - map.getCamera().getX());
+        int screenY = Math.round(getBounds().getY1() - map.getCamera().getY() - ARROW_ICON_SIZE - 12);
+        String text = "Broken";
+        int textX = screenX - graphicsHandler.getGraphics().getFontMetrics(BROKEN_POPUP_FONT).stringWidth(text) / 2;
+        graphicsHandler.drawStringWithOutline(text, textX, screenY, BROKEN_POPUP_FONT, Color.ORANGE, Color.BLACK, 2f);
     }
 
     @Override
