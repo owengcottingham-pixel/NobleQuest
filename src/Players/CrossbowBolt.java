@@ -2,6 +2,7 @@ package Players;
 
 import Engine.GraphicsHandler;
 import Engine.ImageLoader;
+import EnhancedMapTiles.LavaBossPlatform;
 import GameObject.Rectangle;
 import Level.Enemy;
 import Level.EnhancedMapTile;
@@ -49,8 +50,8 @@ public class CrossbowBolt {
             return;
         }
 
-        // move in small steps so a fast bolt can't skip over a thin wall or a small enemy
-        int steps = (int) Math.ceil(Math.max(Math.abs(velocityX), Math.abs(velocityY)) / 6f);
+        // Check each pixel so fast bolts cannot tunnel through thin platform art.
+        int steps = (int) Math.ceil(Math.max(Math.abs(velocityX), Math.abs(velocityY)));
         for (int i = 0; i < steps; i++) {
             x += velocityX / steps;
             y += velocityY / steps;
@@ -60,8 +61,6 @@ public class CrossbowBolt {
                 return;
             }
             if (hitsWall(map)) {
-                x += velocityX * 0.3f;            // sink the tip into the wall a little
-                y += velocityY * 0.3f;
                 stuckTimer = STUCK_TIME;
                 return;
             }
@@ -80,7 +79,14 @@ public class CrossbowBolt {
         if (tile.getTileType() == TileType.NOT_PASSABLE) {
             return true;
         }
-        for (EnhancedMapTile enhancedMapTile : map.getActiveEnhancedMapTiles()) {
+        for (EnhancedMapTile enhancedMapTile : map.getEnhancedMapTiles()) {
+            if (enhancedMapTile.getMapEntityStatus() == MapEntityStatus.REMOVED) {
+                continue;
+            }
+            if (enhancedMapTile instanceof LavaBossPlatform
+                && ((LavaBossPlatform) enhancedMapTile).containsVisiblePixel(x, y)) {
+                return true;
+            }
             if ((enhancedMapTile.getTileType() == TileType.NOT_PASSABLE
                 || enhancedMapTile.getTileType() == TileType.JUMP_THROUGH_PLATFORM)
                 && contains(enhancedMapTile.getBounds())) {
