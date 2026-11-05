@@ -183,8 +183,14 @@ public abstract class Map {
                 coin.setMap(this);
                 editorEnhancedMapTiles.add(coin);
             } else {
-                // Ignore unknown editor objects so future editor additions remain backwards compatible.
-                break;
+                // the rest of the objects the editor can place (spikes, springs...): see EditorObjects.
+                // A line that isn't one of them is skipped, so older/newer files still load.
+                String rest = fileInput.hasNextLine() ? fileInput.nextLine() : "";
+                EnhancedMapTile object = EditorObjects.create((objectType + " " + rest).trim().split("\\s+"));
+                if (object != null) {
+                    object.setMap(this);
+                    editorEnhancedMapTiles.add(object);
+                }
             }
         }
 
@@ -455,6 +461,14 @@ public abstract class Map {
 
     public void reset() {
         setupMap();
+    }
+
+
+    public Checklist getChecklist() {
+        return null;
+    }
+
+    public void drawOverPlayer(GraphicsHandler graphicsHandler) {
     }
 
     public void draw(GraphicsHandler graphicsHandler) {

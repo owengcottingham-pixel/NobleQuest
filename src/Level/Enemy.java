@@ -48,4 +48,9 @@ public class Enemy extends MapEntity {
     public boolean hitByBolt(Player player) {
         return false;
     }
+
+    // the same, told where the bolt's tip is (for big enemies where it matters which bit you hit)
+    public boolean hitByBoltAt(Player player, float x, float y) {
+        return hitByBolt(player);
+    }
 }

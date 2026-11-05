@@ -36,7 +36,7 @@ public final class KeyBinds {
         ATTACK("Sword", Key.J),
         INTERACT("Talk / Shop / Well", Key.E),
         PAUSE("Pause", Key.ESC),
-        TOGGLE_CONTROLS("Hide Controls", Key.H);
+        TOGGLE_CONTROLS("Hide To-Do List", Key.H);
 
         public final String label;
         public final Key defaultKey;

@@ -66,6 +66,22 @@ public class DisappearingPlatform extends EnhancedMapTile {
         setIsUpdateOffScreen(true);
     }
 
+    // same, with your own art for the platform (Level 1's forest uses VinePlatform.png)
+    public DisappearingPlatform(BufferedImage image, float x, float y, float scale, Rectangle bounds, int lengthMultiplier) {
+        super(
+            x,
+            y,
+            new FrameBuilder(createRepeatedImage(image, lengthMultiplier))
+                .withBounds(new Rectangle(bounds.getX1(), bounds.getY1(), bounds.getWidth() * lengthMultiplier, bounds.getHeight()))
+                .withScale(scale)
+                .build(),
+            TileType.JUMP_THROUGH_PLATFORM
+        );
+
+        initialize();
+        setIsUpdateOffScreen(true);
+    }
+
     private static BufferedImage createRepeatedImage(BufferedImage image, int lengthMultiplier) {
         if (lengthMultiplier < 1) {
             throw new IllegalArgumentException("lengthMultiplier must be at least 1");

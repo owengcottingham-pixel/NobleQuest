@@ -17,6 +17,7 @@ import Engine.ImageLoader;
 import Game.GameState;
 import Game.ScreenCoordinator;
 import GameObject.SpriteSheet;
+import Level.Checklist;
 import Level.Map;
 import Level.NPC;
 import NPCs.DwarfShopkeeper;
@@ -78,6 +79,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     public void initialize() {
         // define/setup map
         this.map = createCurrentMap();
+        checklist = map.getChecklist();
 
         
         Point spawn = map.getPlayerStartPosition();
@@ -118,28 +120,12 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         }
     }
 
+
     private boolean showControls = true;
+    private Checklist checklist;
     private boolean hWasDown = false;
 
-    // Built fresh from KeyBinds instead of being a hand-written list, which is
-    // what let it drift: it promised W for jump long after jump became Space.
-    // Only the mouse row is fixed, since the crossbow is not a key binding.
-    private static String[][] controlRows() {
-        return new String[][] {
-            { KeyBinds.label(KeyBinds.Action.MOVE_LEFT) + " / "
-                    + KeyBinds.label(KeyBinds.Action.MOVE_RIGHT), "Move" },
-            { KeyBinds.label(KeyBinds.Action.JUMP), "Jump" },
-            { KeyBinds.label(KeyBinds.Action.CROUCH), "Crouch" },
-            { KeyBinds.label(KeyBinds.Action.ATTACK), "Sword" },
-            { "Left Click", "Crossbow (aim with mouse)" },
-            { KeyBinds.label(KeyBinds.Action.DASH), "Dash" },
-            { KeyBinds.label(KeyBinds.Action.INTERACT), "Talk / Shop / Well" },
-            { KeyBinds.label(KeyBinds.Action.PAUSE), "Pause" },
-            { KeyBinds.label(KeyBinds.Action.TOGGLE_CONTROLS), "Hide controls" }
-        };
-    }
-    private static final Font CONTROLS_TITLE_FONT = new Font("Serif", Font.BOLD, 13);
-    private static final Font CONTROLS_FONT = new Font("Arial", Font.BOLD, 11);
+
 
         private final ShopMenu shopMenu = new ShopMenu();
         private DwarfShopkeeper dwarf;
@@ -203,6 +189,9 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
 
                 player.update();
                 map.update(player);
+                if (checklist != null) {
+                    checklist.update(player);
+                }
 
                 if (dwarf != null && dwarf.consumeShopRequest()) {
                     shopMenu.open();
@@ -263,6 +252,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             case RUNNING:
                 map.draw(graphicsHandler);
                 player.draw(graphicsHandler);
+                map.drawOverPlayer(graphicsHandler);
                 drawCoinCounter(graphicsHandler);
                 drawDashBar(graphicsHandler);
                 drawHealthBar(graphicsHandler);
@@ -273,6 +263,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             case PAUSED:
                 map.draw(graphicsHandler);
                 player.draw(graphicsHandler);
+                map.drawOverPlayer(graphicsHandler);
                 drawCoinCounter(graphicsHandler);
                 drawDashBar(graphicsHandler);
                 drawHealthBar(graphicsHandler);
@@ -435,6 +426,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             // keep showing the finished level while it fades to black
             map.draw(graphicsHandler);
             player.draw(graphicsHandler);
+            map.drawOverPlayer(graphicsHandler);
             int alpha = Math.min(255, elapsed * 255 / FADE_OUT_TIME);
             graphicsHandler.drawFilledRectangle(0, 0, w, h, new Color(0, 0, 0, alpha));
         } else {
@@ -458,6 +450,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         // the new level is already loaded underneath the title card
         map.draw(graphicsHandler);
         player.draw(graphicsHandler);
+        map.drawOverPlayer(graphicsHandler);
         drawCoinCounter(graphicsHandler);
         drawDashBar(graphicsHandler);
         drawHealthBar(graphicsHandler);
@@ -576,38 +569,8 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     }
 
     private void drawControls(GraphicsHandler graphicsHandler) {
-        if (!showControls) {
-            return;
-        }
-        String[][] rows = controlRows();
-        FontMetrics keyMetrics = graphicsHandler.getGraphics().getFontMetrics(CONTROLS_FONT);
-        FontMetrics titleMetrics = graphicsHandler.getGraphics().getFontMetrics(CONTROLS_TITLE_FONT);
-
-        int keyColumn = 0;
-        int actionWidth = 0;
-        for (String[] control : rows) {
-            keyColumn = Math.max(keyColumn, keyMetrics.stringWidth(control[0]));
-            actionWidth = Math.max(actionWidth, keyMetrics.stringWidth(control[1]));
-        }
-        keyColumn += 14;
-
-        int padding = 8;
-        int rowHeight = keyMetrics.getHeight();
-        int titleHeight = titleMetrics.getHeight();
-        int width = Math.max(padding * 2 + keyColumn + actionWidth, padding * 2 + titleMetrics.stringWidth("CONTROLS"));
-        int height = padding * 2 + titleHeight + 4 + rows.length * rowHeight;
-
-        int x = 20;
-        int y = 68;
-
-        graphicsHandler.drawFilledRectangle(x, y, width, height, new Color(30, 24, 49, 200));
-        graphicsHandler.drawRectangle(x, y, width, height, new Color(214, 170, 92), 2);
-        graphicsHandler.drawString("CONTROLS", x + padding, y + padding + titleMetrics.getAscent(), CONTROLS_TITLE_FONT, new Color(214, 170, 92));
-
-        for (int i = 0; i < rows.length; i++) {
-            int rowY = y + padding + titleHeight + 4 + i * rowHeight + keyMetrics.getAscent();
-            graphicsHandler.drawString(rows[i][0], x + padding, rowY, CONTROLS_FONT, new Color(255, 214, 120));
-            graphicsHandler.drawString(rows[i][1], x + padding + keyColumn, rowY, CONTROLS_FONT, new Color(251, 230, 160));
+        if (showControls && checklist != null) {
+            checklist.draw(graphicsHandler);
         }
     }
 

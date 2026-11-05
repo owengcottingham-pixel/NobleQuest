@@ -153,6 +153,11 @@ public abstract class Player extends GameObject {
     return attackTimer > 0;
     }
 
+    // which way the current dash is going (dy > 0 = a down-dash)
+    public float getDashDirY() {
+        return dashDirY;
+    }
+
     public float getLastAmountMovedY() {
     return lastAmountMovedY;
 }

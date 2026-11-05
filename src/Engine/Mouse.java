@@ -10,6 +10,9 @@ public class Mouse {
 	private static volatile boolean leftDown, rightDown;
 	private static volatile double coordinateScale = 1;
 	private static volatile int coordinateOffsetX, coordinateOffsetY;
+	// while the screen is drawn upside down (Level 1's reflection world), getY() flips too, so
+	// aiming at something still means pointing at it
+	private static volatile boolean flipY;
 
 	private static final MouseAdapter mouseListener = new MouseAdapter() {
 		@Override
@@ -46,7 +49,11 @@ public class Mouse {
 	}
 
 	public static int getY() {
-		return y;
+		return flipY ? ScreenManager.getScreenHeight() - y : y;
+	}
+
+	public static void setFlipY(boolean flip) {
+		flipY = flip;
 	}
 
 	public static boolean isLeftDown() {

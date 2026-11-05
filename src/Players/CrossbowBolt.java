@@ -67,7 +67,7 @@ public class CrossbowBolt {
             }
             for (Enemy enemy : map.getActiveEnemies()) {
                 if (enemy.getMapEntityStatus() != MapEntityStatus.REMOVED && contains(enemy.getBounds())
-                        && enemy.hitByBolt(shooter)) {
+                        && enemy.hitByBoltAt(shooter, x, y)) {
                     done = true;
                     return;
                 }

@@ -515,6 +515,8 @@ public class CommonTileset extends Tileset {
     // (pumpkin tile 35 is 1035 in the map file). Starting at 1000 means adding new common
     // tiles never shifts them. In the map editor they're at the end of the tile picker.
     public static final int PUMPKIN_TILES_START = 1000;
+    public static final int DARK_FOREST_TILES_START = 2000;
+    public static final int DAYLIGHT_TILES_START = 3000;
 
     @Override
     public HashMap<Integer, MapTileBuilder> mapDefinedTilesToIndex() {
@@ -522,6 +524,16 @@ public class CommonTileset extends Tileset {
         ArrayList<MapTileBuilder> pumpkinTiles = new PumpkinArenaTileset().defineTiles();
         for (int i = 0; i < pumpkinTiles.size(); i++) {
             tiles.put(PUMPKIN_TILES_START + i, pumpkinTiles.get(i).withTileIndex(PUMPKIN_TILES_START + i));
+        }
+        // the dark forest's extra tiles (ramps, sideways thorns, the big tree's leaves...) from 2000 up
+        ArrayList<MapTileBuilder> forestTiles = new DarkForestTileset().defineTiles();
+        for (int i = 0; i < forestTiles.size(); i++) {
+            tiles.put(DARK_FOREST_TILES_START + i, forestTiles.get(i).withTileIndex(DARK_FOREST_TILES_START + i));
+        }
+        // Level 1's daylight tiles (the meadow and the sandstone cliffs) from 3000 up
+        ArrayList<MapTileBuilder> daylightTiles = new DaylightTileset().defineTiles();
+        for (int i = 0; i < daylightTiles.size(); i++) {
+            tiles.put(DAYLIGHT_TILES_START + i, daylightTiles.get(i).withTileIndex(DAYLIGHT_TILES_START + i));
         }
         return tiles;
     }

@@ -7,31 +7,21 @@ import java.awt.image.*;
 public class ImageUtils {
 	// changes desired color to be transparent (the chosen color will not be seen in game when drawn)
 	public static BufferedImage transformColorToTransparency(BufferedImage image, Color transparentColor) {
-		BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g = newImage.createGraphics();
+		// (works on the whole pixel array at once -- same result as going pixel by pixel with
+		// drawRect, which took several milliseconds for even a small sprite sheet)
+		int width = image.getWidth(), height = image.getHeight();
+		int[] pixels = image.getRGB(0, 0, width, height, null, 0, width);
 		int transparentColorIndex = transparentColor.getRGB();
 
-		// iterates through each pixel of the image
-		// if pixel is equal to the transparent color, changes that pixel to be fully transparent
-		for (int i = 0; i < image.getWidth(); i++) {
-			for (int j = 0; j < image.getHeight(); j++) {
-				int rgb = image.getRGB(i, j);
-				if (rgb == transparentColorIndex) {
-					g.setColor(new Color(0, true));
-					g.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR));
-				}
-				else {
-					g.setColor(new Color(rgb, false));
-					g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
-				}
-				g.drawRect(i, j, 1, 1);
-			}
+		// if a pixel is the transparent color it becomes fully transparent, otherwise fully opaque
+		for (int i = 0; i < pixels.length; i++) {
+			pixels[i] = pixels[i] == transparentColorIndex ? 0 : pixels[i] | 0xFF000000;
 		}
-		g.dispose();
+		BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		newImage.getRaster().setDataElements(0, 0, width, height, pixels);
 		return newImage;
 	}
 
-	// https://stackoverflow.com/a/4216315
 	// resizes an image
 	public static BufferedImage resizeImage(BufferedImage image, int newWidth, int newHeight) {
 		BufferedImage resized = new BufferedImage(newWidth, newHeight, image.getType());
