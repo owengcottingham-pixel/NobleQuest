@@ -4,6 +4,7 @@ import Level.Map;
 import Maps.Level1;
 import Maps.Level2;
 import Maps.LavaBossLevel;
+import Maps.TempleLevel;
 import Maps.TestMap;
 import Maps.TitleScreenMap;
 
@@ -16,6 +17,7 @@ public class EditorMaps {
             add("Level2");
             add("LavaBossLevel");
             add("Level1");
+            add("TempleLevel");
             add("TitleScreen");
         }};
     }
@@ -30,6 +32,8 @@ public class EditorMaps {
                 return new LavaBossLevel();
             case "Level1":
                 return new Level1();
+            case "TempleLevel":
+                return new TempleLevel();
             case "TitleScreen":
                 return new TitleScreenMap();
             default:

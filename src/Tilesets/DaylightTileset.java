@@ -5,6 +5,7 @@ import Builders.MapTileBuilder;
 import Engine.ImageLoader;
 import Level.TileType;
 import Level.Tileset;
+import Utils.SlopeTileLayoutUtils;
 
 import java.util.ArrayList;
 
@@ -75,6 +76,21 @@ public class DaylightTileset extends Tileset {
             /* 54 */ "mirror_surface", "NOT_PASSABLE",
             /* 55 */ "mirror_water", "NOT_PASSABLE",
             /* 56 */ "kelp", "NOT_PASSABLE",           // a wall of kelp, only in the reflection
+            // the monk temple's hill
+            /* 57 */ "slope_up", "SLOPE",              // grass rising to the right
+            /* 58 */ "slope_down", "SLOPE",            // grass falling to the right
+            /* 59 */ "stairs_up", "SLOPE",             // stone steps, walk up them like a slope
+            /* 60 */ "stairs_down", "SLOPE",
+            /* 61 */ "stone_top", "NOT_PASSABLE",
+            /* 62 */ "stone", "NOT_PASSABLE",
+            /* 63 */ "lantern_top", "PASSABLE",        // stone lantern, 1 wide x 2 tall
+            /* 64 */ "lantern_bottom", "PASSABLE",
+            /* 65 */ "blossom_tl", "PASSABLE",         // cherry tree, same shape as the oak: 65 66 / 67 68 / 69 70
+            /* 66 */ "blossom_tr", "PASSABLE",
+            /* 67 */ "blossom_ml", "PASSABLE",
+            /* 68 */ "blossom_mr", "PASSABLE",
+            /* 69 */ "blossom_bl", "PASSABLE",
+            /* 70 */ "blossom_br", "PASSABLE",
     };
 
     public DaylightTileset() {
@@ -86,8 +102,15 @@ public class DaylightTileset extends Tileset {
         ArrayList<MapTileBuilder> mapTiles = new ArrayList<>();
         for (int i = 0; i < TILES.length / 2; i++) {
             TileType type = TileType.valueOf(TILES[i * 2 + 1]);
+            String name = TILES[i * 2];
             FrameBuilder frame = new FrameBuilder(getSubImage(i / 8, i % 8)).withScale(tileScale);
-            mapTiles.add(new MapTileBuilder(frame.build()).withTileType(type));
+            MapTileBuilder builder = new MapTileBuilder(frame.build()).withTileType(type);
+            if (name.endsWith("_up")) {
+                builder.withTileLayout(SlopeTileLayoutUtils.createLeft45SlopeLayout(spriteWidth, (int) tileScale));
+            } else if (name.endsWith("_down")) {
+                builder.withTileLayout(SlopeTileLayoutUtils.createRight45SlopeLayout(spriteWidth, (int) tileScale));
+            }
+            mapTiles.add(builder);
         }
         return mapTiles;
     }

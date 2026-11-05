@@ -25,6 +25,7 @@ import Level.Player;
 import Level.PlayerListener;
 import Maps.CloudLevel;
 import Maps.LavaBossLevel;
+import Maps.TempleLevel;
 import Maps.Level1;
 import Maps.Level2;
 import Maps.TestMap;
@@ -139,6 +140,8 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             case 3:
                 return new LavaBossLevel();
             case 4:
+                return new TempleLevel();
+            case 5:
                 return new CloudLevel();
             default:
                 throw new IllegalStateException("Unknown level: " + currentLevel);
@@ -232,8 +235,14 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
                             showIntroOnInit = true;
                             initialize();
                         } else if (currentLevel == 3) {
-                            // The Lava Boss level is complete. Start the Cloud level.
+                            // The Lava Boss level is complete. Start the temple.
                             currentLevel = 4;
+                            WanderingMonk.clearCheckpoint();
+                            showIntroOnInit = true;
+                            initialize();
+                        } else if (currentLevel == 4) {
+                            // The dragon flew you up from the temple. Start the Cloud level.
+                            currentLevel = 5;
                             WanderingMonk.clearCheckpoint();
                             showIntroOnInit = true;
                             initialize();
@@ -442,6 +451,8 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
             int textAlpha = Math.min(255, (elapsed - FADE_OUT_TIME) * 255 / 30);
             String completionMessage = currentLevel == 3
                 ? "Boss Cleared! Congratulations!"
+                : currentLevel == 4
+                ? "Up into the clouds..."
                 : "Level " + currentLevel + " Cleared!";
             drawCenteredText(graphicsHandler, completionMessage, h / 2 - 40,
                 new Font("Arial", Font.BOLD, 44), new Color(255, 255, 255, textAlpha));
@@ -475,7 +486,9 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
         alpha = Math.max(0, Math.min(255, alpha));
 
         graphicsHandler.drawFilledRectangle(0, 0, w, h, new Color(0, 0, 0, alpha));
-        String introTitle = currentLevel == 3 ? "Lava Boss Fight" : "Level " + currentLevel;
+        String introTitle = currentLevel == 3 ? "Lava Boss Fight"
+            : currentLevel == 4 ? "The Monk's Temple"
+            : "Level " + currentLevel;
         drawCenteredText(graphicsHandler, introTitle, h / 2 - 30,
             new Font("Arial", Font.BOLD, 56), new Color(255, 255, 255, alpha));
     }

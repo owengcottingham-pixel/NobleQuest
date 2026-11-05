@@ -167,6 +167,24 @@ public abstract class Player extends GameObject {
         return dashDirY;
     }
 
+    // cutscenes (the temple): no controls, and the level moves him around itself
+    private boolean frozen = false;
+
+    public void setFrozen(boolean frozen) {
+        this.frozen = frozen;
+        if (frozen) {
+            velocityX = 0;
+            attackTimer = 0;
+            if (playerState == PlayerState.DASHING) {
+                playerState = PlayerState.STANDING;
+            }
+        }
+    }
+
+    public boolean isFrozen() {
+        return frozen;
+    }
+
     public float getLastAmountMovedY() {
     return lastAmountMovedY;
 }
@@ -255,6 +273,12 @@ public abstract class Player extends GameObject {
         }
         moveAmountX = 0;
         moveAmountY = 0;
+
+        if (levelState == LevelState.RUNNING && frozen) {
+            currentAnimationName = facingDirection == Direction.RIGHT ? "STAND_RIGHT" : "STAND_LEFT";
+            super.update();
+            return;
+        }
 
         // if player is currently playing through level (has not won or lost)
         if (levelState == LevelState.RUNNING) {
