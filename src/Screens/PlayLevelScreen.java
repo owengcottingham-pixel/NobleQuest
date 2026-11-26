@@ -1,39 +1,36 @@
 package Screens;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics2D;
+import Engine.GraphicsHandler;
+import Engine.ImageLoader;
 import Engine.Key;
 import Engine.KeyBinds;
 import Engine.KeyLocker;
 import Engine.Keyboard;
-import Engine.ScreenManager;
-import java.awt.image.BufferedImage;
-
-import Engine.GraphicsHandler;
 import Engine.Screen;
-import Engine.ImageLoader;
+import Engine.ScreenManager;
 import Game.GameState;
 import Game.ScreenCoordinator;
 import GameObject.SpriteSheet;
 import Level.Checklist;
 import Level.Map;
 import Level.NPC;
-import NPCs.DwarfShopkeeper;
 import Level.Player;
 import Level.PlayerListener;
 import Maps.CloudLevel;
 import Maps.LavaBossLevel;
-import Maps.TempleLevel;
 import Maps.Level1;
 import Maps.Level2;
-import Maps.TestMap;
-import Maps.Level1;
-import Players.Knight;
+import Maps.TempleLevel;
+import NPCs.DwarfShopkeeper;
 import NPCs.WanderingMonk;
-import Utils.Point;
+import Players.Knight;
 import Utils.NumberDisplay;
+import Utils.Point;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 
 public class PlayLevelScreen extends Screen implements PlayerListener {
 
@@ -53,7 +50,7 @@ public class PlayLevelScreen extends Screen implements PlayerListener {
     private int introTimer;
 
     protected ScreenCoordinator screenCoordinator;
-    protected int currentLevel = 1;
+    protected int currentLevel = 2;
     protected Map map;
     protected Player player;
     protected PlayLevelScreenState playLevelScreenState;

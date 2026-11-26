@@ -1,4 +1,3 @@
-
 package Screens;
 
 import Engine.*;
@@ -15,11 +14,16 @@ public class StoryIntroScreen extends Screen {
 
     private final ScreenCoordinator screenCoordinator;
 
-    private static final int IMAGE_COUNT = 5;
+    // ORIGINAL STORY IMAGES
+    private static final String[] IMAGE_FILES = {
+        "StoryIntro1.png",
+        "StoryIntro2.png",
+        "StoryIntro3.png",
+        "StoryIntro4.png",
+        "StoryIntro5.png"
+    };
 
-    // ==========================================
-    // STORY TEXT - EDIT HERE
-    // ==========================================
+    // ORIGINAL STORY TEXT - EDIT HERE
     private static final String[] STORY_TEXT = {
         "All your life, you have been told tales of a place beyond the mountains.",
         "A village inhabited by elders who possess infinite wisdom.",
@@ -28,50 +32,101 @@ public class StoryIntroScreen extends Screen {
         "And so, the journey begins... a Noble Quest."
     };
 
+    // LEVEL 2 STORY IMAGES
+    private static final String[] LEVEL_2_IMAGES = {
+        "level2intro1.PNG",
+        "level2intro2.PNG",
+        "level2intro3.PNG"
+    };
+
+    // LEVEL 2 STORY TEXT - EDIT HERE
+    private static final String[] LEVEL_2_TEXT = {
+        "At long last, you have reached the caves in the mountains",
+        "Legends tell of fearsome beasts within.",
+        "Only one way to know for sure."
+    };
+
     private BufferedImage[] images;
+    private String[] activeStoryText;
+
     private int currentImage;
-
-    // Prevent holding E from skipping pages
     private boolean eWasPressed;
+    private boolean finished;
+    private boolean level2Story;
 
+    // Original opening story constructor
     public StoryIntroScreen(ScreenCoordinator screenCoordinator) {
         this.screenCoordinator = screenCoordinator;
+        this.level2Story = false;
+    }
+
+    // Level 2 story constructor
+    public StoryIntroScreen(
+            ScreenCoordinator screenCoordinator,
+            boolean level2Story) {
+
+        this.screenCoordinator = screenCoordinator;
+        this.level2Story = level2Story;
     }
 
     @Override
     public void initialize() {
 
-        images = new BufferedImage[IMAGE_COUNT];
+        String[] imageFiles;
 
-        images[0] = ImageLoader.load("StoryIntro1.png");
-        images[1] = ImageLoader.load("StoryIntro2.png");
-        images[2] = ImageLoader.load("StoryIntro3.png");
-        images[3] = ImageLoader.load("StoryIntro4.png");
-        images[4] = ImageLoader.load("StoryIntro5.png");
+        if (level2Story) {
+            imageFiles = LEVEL_2_IMAGES;
+            activeStoryText = LEVEL_2_TEXT;
+        } else {
+            imageFiles = IMAGE_FILES;
+            activeStoryText = STORY_TEXT;
+        }
+
+        images = new BufferedImage[imageFiles.length];
+
+        for (int i = 0; i < imageFiles.length; i++) {
+            images[i] = ImageLoader.load(imageFiles[i]);
+        }
 
         currentImage = 0;
-        eWasPressed = false;
+        eWasPressed = Keyboard.isKeyDown(Key.E);
+        finished = false;
     }
 
     @Override
     public void update() {
 
-        // Detect E key
+        if (finished) {
+            return;
+        }
+
         boolean ePressed = Keyboard.isKeyDown(Key.E);
 
-        // Only advance on a new press
         if (ePressed && !eWasPressed) {
 
-            currentImage++;
+            if (currentImage < images.length - 1) {
 
-            // After image 5, start Level 1
-            if (currentImage >= IMAGE_COUNT) {
-                screenCoordinator.setGameState(GameState.LEVEL);
-                return;
+                currentImage++;
+
+            } else {
+
+                finished = true;
+
+                // Only the original story starts a new game.
+                // The Level 2 story resumes existing gameplay.
+                if (!level2Story) {
+                    screenCoordinator.setGameState(
+                        GameState.LEVEL
+                    );
+                }
             }
         }
 
         eWasPressed = ePressed;
+    }
+
+    public boolean isFinished() {
+        return finished;
     }
 
     @Override
@@ -80,13 +135,12 @@ public class StoryIntroScreen extends Screen {
         int width = ScreenManager.getScreenWidth();
         int height = ScreenManager.getScreenHeight();
 
-        // Draw black background
         graphicsHandler.drawFilledRectangle(
             0, 0, width, height, Color.BLACK
         );
 
-        // Draw current story image
         if (images[currentImage] != null) {
+
             graphicsHandler.drawImage(
                 images[currentImage],
                 0,
@@ -96,15 +150,13 @@ public class StoryIntroScreen extends Screen {
             );
         }
 
-        // Draw story text at bottom
         drawStoryText(
             graphicsHandler,
-            STORY_TEXT[currentImage],
+            activeStoryText[currentImage],
             width,
             height
         );
 
-        // Draw E - NEXT PAGE at top
         drawNextPageText(
             graphicsHandler,
             width
@@ -112,9 +164,8 @@ public class StoryIntroScreen extends Screen {
     }
 
     private void drawNextPageText(
-        GraphicsHandler graphicsHandler,
-        int width
-    ) {
+            GraphicsHandler graphicsHandler,
+            int width) {
 
         Font font = new Font(
             "Arial",
@@ -139,13 +190,11 @@ public class StoryIntroScreen extends Screen {
     }
 
     private void drawStoryText(
-        GraphicsHandler graphicsHandler,
-        String text,
-        int width,
-        int height
-    ) {
+            GraphicsHandler graphicsHandler,
+            String text,
+            int width,
+            int height) {
 
-        // Story text font
         int fontSize = Math.max(
             16,
             (int) (height * 0.04)
@@ -159,15 +208,14 @@ public class StoryIntroScreen extends Screen {
 
         FontMetrics metrics = getFontMetrics(font);
 
-        // Maximum text width
         int maxTextWidth = width - 100;
 
         ArrayList<String> lines = new ArrayList<>();
 
         String[] words = text.split("\\s+");
+
         StringBuilder line = new StringBuilder();
 
-        // Automatically wrap long sentences
         for (String word : words) {
 
             String testLine = line.length() == 0
@@ -178,9 +226,11 @@ public class StoryIntroScreen extends Screen {
                     && line.length() > 0) {
 
                 lines.add(line.toString());
+
                 line = new StringBuilder(word);
 
             } else {
+
                 line = new StringBuilder(testLine);
             }
         }
@@ -190,15 +240,13 @@ public class StoryIntroScreen extends Screen {
         }
 
         int lineHeight = metrics.getHeight();
+
         int totalHeight = lines.size() * lineHeight;
 
-        // Story text position near bottom
-        // Smaller 40 = lower text
         int textY = height - 40
             - totalHeight
             + metrics.getAscent();
 
-        // Draw centered text
         for (String storyLine : lines) {
 
             int textX =
@@ -216,7 +264,6 @@ public class StoryIntroScreen extends Screen {
         }
     }
 
-    // Helper method for measuring text width
     private FontMetrics getFontMetrics(Font font) {
 
         BufferedImage tempImage = new BufferedImage(
